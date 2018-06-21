@@ -8,15 +8,15 @@ buildscript {
 
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.2.RELEASE")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.41")
-        classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.41")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.50")
+        classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.50")
     }
 }
 
 plugins {
     application
-    kotlin("jvm") version "1.2.41"
-    kotlin("plugin.spring") version "1.2.41"
+    kotlin("jvm") version "1.2.50"
+    kotlin("plugin.spring") version "1.2.50"
 
     id("org.springframework.boot") version "2.0.2.RELEASE"
     id("io.spring.dependency-management") version "1.0.5.RELEASE"

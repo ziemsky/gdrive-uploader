@@ -6,12 +6,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.dsl.channel.MessageChannels;
+import org.springframework.integration.dsl.channel.QueueChannelSpec;
 import org.springframework.integration.handler.GenericHandler;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.integration.scheduling.PollerMetadata;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -22,7 +23,10 @@ import static org.springframework.integration.dsl.Pollers.fixedDelay;
 import static org.springframework.integration.file.dsl.Files.inboundAdapter;
 
 @Configuration
+@EnableIntegration
 public class UploaderConfig {
+
+    private static final int MAX_MESSAGES_PER_POLL = 10;
 
     final Logger log = LoggerFactory.getLogger(UploaderConfig.class);
 
@@ -32,7 +36,8 @@ public class UploaderConfig {
     // to prevent files being picked up by uploader before they've been fully uploaded by
     // cameras
 
-    @Bean IntegrationFlow inboundFileReaderEndpoint() {
+    @Bean
+    IntegrationFlow inboundFileReaderEndpoint() {
 
         log.info("Monitoring {}", inboundDir);
 
@@ -44,33 +49,35 @@ public class UploaderConfig {
                 File::getName,
                 (leftFileName, rightFileName) -> -1 * leftFileName.compareTo(rightFileName)
             ))
-                .patternFilter("*.jpg"),
-            endpointConfig -> endpointConfig.poller(fixedDelay(3, TimeUnit.SECONDS))
+            .patternFilter("*.jpg")
         )
-            .channel(filesQueueChannel())
+            .channel("filesQueueChannel")
             .get();
     }
 
-
     @Bean IntegrationFlow outboundFileUploaderEndpoint() {
         return IntegrationFlows
-            .from(this::filesQueueChannel)
-            // .from(this::filesQueueChannel, sourcePollingChannelAdapterSpec -> sourcePollingChannelAdapterSpec.poller(Pollers.fixedDelay(10, TimeUnit.SECONDS)))
-            // .handle(gDriveUploader())
+            .from("filesQueueChannel")
             .handle(gDriveUploader())
-
             .get();
     }
 
     @NotNull private GenericHandler<File> gDriveUploader() {
         return (payload, headers) -> {
-            log.debug("PAYLOAD: " + payload);
-            log.debug("HEADERS: " + headers);
+            log.info("PAYLOAD: " + payload);
+            log.info("HEADERS: " + headers);
             return null;
         };
     }
 
-    @Bean MessageChannel filesQueueChannel() {
-        return MessageChannels.publishSubscribe().get();
+    @Bean QueueChannelSpec filesQueueChannel() {
+        return MessageChannels.queue();
+    }
+
+    @Bean(name = PollerMetadata.DEFAULT_POLLER)
+    PollerMetadata defaultPoller() {
+        return fixedDelay(3, TimeUnit.SECONDS)
+            .maxMessagesPerPoll(MAX_MESSAGES_PER_POLL)
+            .get();
     }
 }
