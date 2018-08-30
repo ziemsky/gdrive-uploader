@@ -94,10 +94,13 @@ public class UploaderConfig {
 
     @NotNull private GenericHandler<List<File>> uploaderActivator() {
         return (payload, headers) -> {
-            log.info("PAYLOAD: " + payload);
-            log.info("HEADERS: " + headers);
+            uploader().upload(payload);
             return null;
         };
+    }
+
+    @Bean Uploader uploader() {
+        return new GDriveUploader();
     }
 
     @Bean QueueChannelSpec filesQueueChannel() {
@@ -110,5 +113,4 @@ public class UploaderConfig {
             .maxMessagesPerPoll(BATCH_SIZE)
             .get();
     }
-
 }
