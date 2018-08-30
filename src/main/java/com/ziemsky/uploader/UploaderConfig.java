@@ -7,21 +7,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.config.EnableIntegration;
-import org.springframework.integration.dsl.AggregatorSpec;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.channel.MessageChannels;
 import org.springframework.integration.dsl.channel.QueueChannelSpec;
+import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.handler.GenericHandler;
 import org.springframework.integration.scheduling.PollerMetadata;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.springframework.integration.dsl.Pollers.fixedDelay;
-import static org.springframework.integration.file.dsl.Files.inboundAdapter;
 
 @Configuration
 @EnableIntegration
@@ -40,13 +40,24 @@ public class UploaderConfig {
     // to prevent files being picked up by uploader before they've been fully uploaded by
     // cameras
 
-    @Bean
-    IntegrationFlow inboundFileReaderEndpoint() {
+    // file polling endpoint
+    //          |
+    //  FILES_QUEUE_CHANNEL
+    //          |
+    //      aggregator
+    //          |
+    // BATCH_QUEUE_CHANNEL
+    //          |
+    // uploader activator
+    //          |
+    //      uploader
+
+    @Bean IntegrationFlow inboundFileReaderEndpoint() {
 
         log.info("Monitoring {}", inboundDir);
 
         return IntegrationFlows.from(
-            inboundAdapter(
+            Files.inboundAdapter(
                 // todo switch from polling to watch service? See docs for caveats!:
                 // https://docs.spring.io/spring-integration/reference/html/files.html#watch-service-directory-scanner
                 inboundDir.toFile(),
@@ -60,23 +71,37 @@ public class UploaderConfig {
             .get();
     }
 
-    @Bean IntegrationFlow outboundFileUploaderEndpoint() {
+    @Bean IntegrationFlow filesBatchAggregator() {
         return IntegrationFlows
             .from(FILES_QUEUE_CHANNEL)
-            .handle(uploader())
+            .aggregate(aggregatorSpec -> aggregatorSpec
+                .correlationStrategy(message -> true)
+                .releaseStrategy(group -> group.size() == BATCH_SIZE)
+                .groupTimeout(1000)
+                .sendPartialResultOnExpiry(true)
+                .expireGroupsUponCompletion(true)
+            )
+            .channel(BATCH_QUEUE_CHANNEL)
             .get();
     }
 
-    @NotNull private GenericHandler<File> uploader() {
+    @Bean IntegrationFlow outboundFileUploaderEndpoint() {
+        return IntegrationFlows
+            .from(BATCH_QUEUE_CHANNEL)
+            .handle(uploaderActivator())
+            .get();
+    }
+
+    @NotNull private GenericHandler<List<File>> uploaderActivator() {
         return (payload, headers) -> {
             log.info("PAYLOAD: " + payload);
-            // log.info("HEADERS: " + headers);
+            log.info("HEADERS: " + headers);
             return null;
         };
     }
 
     @Bean QueueChannelSpec filesQueueChannel() {
-        return MessageChannels.queue(BATCH_SIZE);
+        return MessageChannels.queue();
     }
 
     @Bean(name = PollerMetadata.DEFAULT_POLLER)
@@ -85,4 +110,5 @@ public class UploaderConfig {
             .maxMessagesPerPoll(BATCH_SIZE)
             .get();
     }
+
 }
