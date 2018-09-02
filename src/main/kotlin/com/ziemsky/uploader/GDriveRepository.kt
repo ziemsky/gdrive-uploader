@@ -6,7 +6,7 @@ import java.io.File
 class GDriveRepository : Repository {
 
     companion object {
-        val log = LoggerFactory.getLogger(GDriveRepository.javaClass)
+        val log = LoggerFactory.getLogger(GDriveRepository::class.java)
     }
 
     override fun upload(files: List<File>) {

@@ -3,6 +3,9 @@ package com.ziemsky.uploader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.ApplicationPidFileWriter;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.config.EnableIntegration;
@@ -111,5 +114,12 @@ public class UploaderConfig {
         return fixedDelay(POLLING_INTERVAL_IN_MILLIS, TimeUnit.MILLISECONDS)
             .maxMessagesPerPoll(BATCH_SIZE)
             .get();
+    }
+
+    @Bean ApplicationListener pidWriter() {
+        final ApplicationPidFileWriter applicationPidFileWriter = new ApplicationPidFileWriter();
+        applicationPidFileWriter.setTriggerEventType(ApplicationStartedEvent.class);
+
+        return applicationPidFileWriter;
     }
 }
