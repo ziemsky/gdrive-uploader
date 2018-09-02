@@ -2,7 +2,6 @@ package com.ziemsky.uploader
 
 import java.io.File
 
-interface Uploader {
-
+interface Repository {
     fun upload(files: List<File>)
 }

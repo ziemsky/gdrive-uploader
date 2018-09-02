@@ -1,6 +1,5 @@
 package com.ziemsky.uploader;
 
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,10 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.dsl.channel.MessageChannelSpec;
 import org.springframework.integration.dsl.channel.MessageChannels;
-import org.springframework.integration.dsl.channel.QueueChannelSpec;
 import org.springframework.integration.file.dsl.Files;
-import org.springframework.integration.handler.GenericHandler;
 import org.springframework.integration.scheduling.PollerMetadata;
 
 import java.io.File;
@@ -27,10 +25,11 @@ import static org.springframework.integration.dsl.Pollers.fixedDelay;
 @EnableIntegration
 public class UploaderConfig {
 
-    private static final int BATCH_SIZE = 10;
+    private static final int BATCH_SIZE = 4;
 
-    public static final String FILES_QUEUE_CHANNEL = "filesQueueChannel";
-    public static final String BATCH_QUEUE_CHANNEL = "batchQueueChannel";
+    private static final String FILES_INCOMING_CHANNEL = "incomingFilesChannel";
+    private static final String FILES_BATCHED_TO_SECURE_CHANNEL = "filesBatchedToSecureChannel";
+    private static final int POLLING_INTERVAL_IN_MILLIS = 100;
 
     final Logger log = LoggerFactory.getLogger(UploaderConfig.class);
 
@@ -67,13 +66,13 @@ public class UploaderConfig {
                 ))
                 .patternFilter("*.jpg")
         )
-            .channel(FILES_QUEUE_CHANNEL)
+            .channel(FILES_INCOMING_CHANNEL)
             .get();
     }
 
     @Bean IntegrationFlow filesBatchAggregator() {
         return IntegrationFlows
-            .from(FILES_QUEUE_CHANNEL)
+            .from(FILES_INCOMING_CHANNEL)
             .aggregate(aggregatorSpec -> aggregatorSpec
                 .correlationStrategy(message -> true)
                 .releaseStrategy(group -> group.size() == BATCH_SIZE)
@@ -81,35 +80,35 @@ public class UploaderConfig {
                 .sendPartialResultOnExpiry(true)
                 .expireGroupsUponCompletion(true)
             )
-            .channel(BATCH_QUEUE_CHANNEL)
+            .channel(FILES_BATCHED_TO_SECURE_CHANNEL)
             .get();
     }
 
-    @Bean IntegrationFlow outboundFileUploaderEndpoint() {
+    @Bean IntegrationFlow outboundFileUploaderEndpoint(SecurerService securerService) {
         return IntegrationFlows
-            .from(BATCH_QUEUE_CHANNEL)
-            .handle(uploaderActivator())
+            .from(FILES_BATCHED_TO_SECURE_CHANNEL)
+            .<List<File>>handle((payload, headers) -> {
+                securerService.secure(payload);
+                return null;
+            })
             .get();
     }
 
-    @NotNull private GenericHandler<List<File>> uploaderActivator() {
-        return (payload, headers) -> {
-            uploader().upload(payload);
-            return null;
-        };
+    @Bean SecurerService securerService(final Repository repository) {
+        return new SecurerService(repository);
     }
 
-    @Bean Uploader uploader() {
-        return new GDriveUploader();
+    @Bean Repository repository() {
+        return new GDriveRepository();
     }
 
-    @Bean QueueChannelSpec filesQueueChannel() {
-        return MessageChannels.queue();
+    @Bean MessageChannelSpec incomingFilesChannel() {
+        return MessageChannels.direct();
     }
 
     @Bean(name = PollerMetadata.DEFAULT_POLLER)
     PollerMetadata defaultPoller() {
-        return fixedDelay(3, TimeUnit.SECONDS)
+        return fixedDelay(POLLING_INTERVAL_IN_MILLIS, TimeUnit.MILLISECONDS)
             .maxMessagesPerPoll(BATCH_SIZE)
             .get();
     }

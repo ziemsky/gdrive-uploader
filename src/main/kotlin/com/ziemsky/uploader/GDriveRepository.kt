@@ -3,10 +3,10 @@ package com.ziemsky.uploader
 import org.slf4j.LoggerFactory
 import java.io.File
 
-class GDriveUploader : Uploader {
+class GDriveRepository : Repository {
 
     companion object {
-        val log = LoggerFactory.getLogger(GDriveUploader.javaClass)
+        val log = LoggerFactory.getLogger(GDriveRepository.javaClass)
     }
 
     override fun upload(files: List<File>) {
