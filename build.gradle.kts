@@ -1,7 +1,4 @@
-import com.github.jengelman.gradle.plugins.processes.tasks.JavaFork
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.springframework.boot.gradle.tasks.bundling.BootJar
-
 
 buildscript {
 
@@ -10,74 +7,62 @@ buildscript {
     }
 
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.2.RELEASE")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.51")
-        classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.51")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.70")
+        classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.70")
     }
 }
 
 plugins {
-    application
     java
 
-    kotlin("jvm") version "1.2.51"
+    //`kotlin-dsl`
+    //https://github.com/gradle/kotlin-dsl/blob/master/doc/getting-started/Configuring-Plugins.md
 
-    kotlin("plugin.spring") version "1.2.51"
+    kotlin("jvm") version "1.2.70" apply false
+    kotlin("plugin.spring") version "1.2.70" apply false
 
-    id("org.springframework.boot") version "2.0.2.RELEASE"
-    id("io.spring.dependency-management") version "1.0.6.RELEASE"
+    id("org.springframework.boot") version "2.0.2.RELEASE" apply false
+    id("io.spring.dependency-management") version "1.0.6.RELEASE" apply false
 
-    id("com.github.johnrengelman.processes") version "0.5.0"
+    id("com.github.johnrengelman.processes") version "0.5.0" apply false
+
+    // id("com.dorongold.task-tree") version "1.3"
 }
 
-application {
-    mainClassName = "com.ziemsky.uploader.UploaderApplicationKt"
-}
-
-//val kotlinCompile: KotlinCompile by tasks
-//
-//kotlinCompile.kotlinOptions.suppressWarnings = true
-//kotlinCompile.kotlinOptions.freeCompilerArgs = arrayListOf("-Xjsr305=strict")
-//kotlinCompile.kotlinOptions.jvmTarget = "1.8"
-
-//compileTestKotlin {
-//    kotlinOptions {
-//        freeCompilerArgs = ["-Xjsr305=strict"]
-//        jvmTarget = "1.8"
-//    }
-//}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-    }
-}
-
-allprojects {
+subprojects {
     repositories {
+        mavenCentral()
         jcenter()
     }
+
+    tasks.withType<KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = "1.8"
+            freeCompilerArgs = listOf("-Xjsr305=strict")
+        }
+    }
+
 }
 
-dependencies {
-    compile(kotlin("stdlib-jdk8"))
-    compile(kotlin("reflect"))
-
-    compile("org.springframework.boot:spring-boot-starter-integration")
-    compile("org.springframework.integration:spring-integration-file")
-
-    testCompile("org.springframework.boot:spring-boot-starter-test")
-    testCompile("io.kotlintest:kotlintest-runner-junit5:3.1.8")
-}
+//dependencies {
+//    compile(kotlin("stdlib-jdk8"))
+//    compile(kotlin("reflect"))
+//
+//    compile("org.springframework.boot:spring-boot-starter-integration")
+//    compile("org.springframework.integration:spring-integration-file")
+//
+//    testCompile("org.springframework.boot:spring-boot-starter-test")
+//    testCompile("io.kotlintest:kotlintest-runner-junit5:3.1.8")
+//
+//    testCompile("io.mockk:mockk:1.8.7")
+//}
 
 // TASKS
 
-val test by tasks.getting(Test::class) {
-    useJUnitPlatform()
-}
+//val test by tasks.getting(Test::class) {
+//    useJUnitPlatform()
+//}
 
-// tasks from com.github.johnrengelman.processes plugin
 val appStart by tasks.registering(JavaFork::class) {
     group = "Application"
     description = """Starts the application from the assembled JAR file as a background process.
@@ -107,5 +92,5 @@ val appStop by tasks.registering(Exec::class) {
     }
 }
 
-appStart {dependsOn(tasks.named<BootJar>("bootJar"))}
-tasks.getByPath(":e2e:test").dependsOn(appStart).finalizedBy(appStop)
+appStart { dependsOn(tasks.named<BootJar>("bootJar")) }
+tasks.getByPath(":test-e2e:test").dependsOn(appStart).finalizedBy(appStop)
