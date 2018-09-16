@@ -63,34 +63,6 @@ subprojects {
 //    useJUnitPlatform()
 //}
 
-val appStart by tasks.registering(JavaFork::class) {
-    group = "Application"
-    description = """Starts the application from the assembled JAR file as a background process.
-                  |  Use to run the app in the background for e2e tests; for normal run call bootRun task.
-                  """.trimMargin()
-
-    main = "-jar"
-    args(listOf("build/libs/uploader.jar"))
-}
-
-val appStop by tasks.registering(Exec::class) {
-    group = "Application"
-    description = """Kills process identified by PID found in file application.pid.
-                      |  Uses command 'kill' which, currently, limits its use to Unix-based systems.
-        """.trimMargin()
-
-    executable = "kill"
-
-    val pidFile = File("application.pid")
-
-    onlyIf {
-        pidFile.isFile
-    }
-
-    doFirst {
-        args(listOf(pidFile.readText()))
-    }
-}
-
-appStart { dependsOn(tasks.named<BootJar>("bootJar")) }
-tasks.getByPath(":test-e2e:test").dependsOn(appStart).finalizedBy(appStop)
+tasks.getByPath(":test-e2e:test")
+        .dependsOn(tasks.getByPath(":application:appStart"))
+        .finalizedBy(tasks.getByPath(":application:appStop"))
