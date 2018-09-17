@@ -1,11 +1,12 @@
 package com.ziemsky.uploader;
 
+import com.google.api.services.drive.Drive;
+import com.ziemsky.uploader.google.drive.GDriveProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +19,9 @@ import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.scheduling.PollerMetadata;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +30,9 @@ import static org.springframework.integration.dsl.Pollers.fixedDelay;
 
 @Configuration
 @EnableIntegration
-public class UploaderConfig {
+public class UploaderConfig { // todo convert to Kotlin class
+
+    private final static Logger log = LoggerFactory.getLogger(UploaderConfig.class);
 
     private static final int BATCH_SIZE = 4;
 
@@ -35,7 +40,6 @@ public class UploaderConfig {
     private static final String FILES_BATCHED_TO_SECURE_CHANNEL = "filesBatchedToSecureChannel";
     private static final int POLLING_INTERVAL_IN_MILLIS = 100;
 
-    final Logger log = LoggerFactory.getLogger(UploaderConfig.class);
 
     private @Value("${java.io.tmpdir:'/tmp'}/inbound") Path inboundDir;
 
@@ -102,8 +106,18 @@ public class UploaderConfig {
         return new SecurerService(fileRepository);
     }
 
-    @Bean FileRepository repository() {
-        return new GDriveFileRepository();
+    @Bean Drive drive() {
+        return new GDriveProvider( // todo (at least some) literals conigurable for different envs.
+            "uploader",
+            "tokens",
+            "/credentials.json",
+            "Uploader"
+        ).drive();
+    }
+
+    @Bean FileRepository repository(final Drive drive) throws GeneralSecurityException, IOException {
+
+        return new GDriveFileRepository(drive);
     }
 
     @Bean MessageChannelSpec incomingFilesChannel() {
@@ -120,7 +134,7 @@ public class UploaderConfig {
     @Bean ApplicationListener pidWriter() {
         final ApplicationPidFileWriter applicationPidFileWriter = new ApplicationPidFileWriter();
         applicationPidFileWriter.setTriggerEventType(ApplicationReadyEvent.class);
-        // applicationPidFileWriter.setTriggerEventType(ApplicationStartedEvent.class);
+        // applicationPidFileWriter.setTriggerEventType(ApplicationStartedEvent.class); // todo report?
 
         return applicationPidFileWriter;
     }

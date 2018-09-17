@@ -5,6 +5,7 @@ import java.io.File
 class SecurerService(val fileRepository: FileRepository) {
 
     fun secure(files: List<File>) {
+
         fileRepository.upload(files)
     }
 

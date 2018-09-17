@@ -39,17 +39,23 @@ plugins {
 }
 
 dependencies {
-    compile(kotlin("stdlib-jdk8"))
-    compile(kotlin("reflect"))
+    implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("reflect"))
 
-    compile("org.springframework.boot:spring-boot-starter-integration")
-    compile("org.springframework.integration:spring-integration-file")
+    implementation("org.springframework.boot:spring-boot-starter-integration")
+    implementation("org.springframework.integration:spring-integration-file")
+    implementation("io.github.microutils:kotlin-logging:1.6.10")
 
-    testCompile("org.springframework.boot:spring-boot-starter-test")
+    // Google Drive client
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.25.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev130-1.25.0")
+    implementation("com.google.api-client:google-api-client:1.25.0")
 
-    testCompile("io.kotlintest:kotlintest-runner-junit5:3.1.8")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    testCompile("io.mockk:mockk:1.8.7")
+    testImplementation("io.kotlintest:kotlintest-runner-junit5:3.1.8")
+
+    testImplementation("io.mockk:mockk:1.8.7")
 }
 
 // TASKS

@@ -9,14 +9,21 @@ plugins {
 }
 
 dependencies {
-    testCompile(project(":test-shared-resources"))
-    testCompile(project(":application"))
+    testImplementation(project(":test-shared-resources"))
+    testImplementation(project(":application"))
 
-    testCompile("io.kotlintest:kotlintest-runner-junit5:3.1.9")
-    testCompile("io.kotlintest:kotlintest-extensions-spring:3.1.9")
+    testImplementation(files("../lib/fs-structure-0.1.0-SNAPSHOT.jar"))
+
+    testImplementation("io.kotlintest:kotlintest-runner-junit5:3.1.9")
+    testImplementation("io.kotlintest:kotlintest-extensions-spring:3.1.9")
 
 
-    testCompile("com.github.tomakehurst:wiremock:2.18.0")
+    // Google Drive client
+    testImplementation("com.google.oauth-client:google-oauth-client-jetty:1.25.0")
+    testImplementation("com.google.apis:google-api-services-drive:v3-rev130-1.25.0")
+    testImplementation("com.google.api-client:google-api-client:1.25.0")
+
+    implementation("io.github.microutils:kotlin-logging:1.6.10")
 
     testRuntime("com.fasterxml.jackson.core:jackson-databind:2.9.6")
     testRuntime("ch.qos.logback:logback-classic:1.2.3")

@@ -1,13 +1,12 @@
 package com.ziemsky.gdriveuploader.test.e2e
 
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.ziemsky.fsstructure.FsStructure.*
 import com.ziemsky.gdriveuploader.test.e2e.config.E2ETestConfig
-import com.ziemsky.gdriveuploader.test.shared.data.TestFilesInput
 import com.ziemsky.gdriveuploader.test.shared.data.TestFixtureService
-import com.ziemsky.gdriveuploader.test.shared.data.wireMockUtils.verifyEventually
+import io.kotlintest.eventually
+import io.kotlintest.seconds
+import io.kotlintest.shouldBe
 import io.kotlintest.specs.BehaviorSpec
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.test.context.ContextConfiguration
 
 /**
@@ -15,49 +14,120 @@ import org.springframework.test.context.ContextConfiguration
  * most critical functionality, leaving testing edge cases to cheaper integration and unit tests.
  */
 @ContextConfiguration(classes = [(E2ETestConfig::class)])
-class UploadSpec(@Value("\${test.e2e.gdrive.port}") val mockGDrivePort: Int,
-                 testFixtureService: TestFixtureService
-): BehaviorSpec({
+class UploadSpec(testFixtureService: TestFixtureService) : BehaviorSpec({
 
-    given("files in the source dir") {
+    given("some remote content and some files in the source dir") {
+        // todo elaborate description
+        testFixtureService.remoteStructureDelete()
+
+        // enough existing daily folders to trigger rotation of the oldest
+        val remoteContentOriginal = create(
+
+                // matching content
+                dir("2018-09-01",
+                        fle("20180901120000-00-front.jpg")
+                ),
+                dir("2018-09-02",
+                        fle("20180902120000-00-front.jpg")
+                ),
+                dir("2018-09-03",
+                        fle("20180903120000-00-front.jpg")
+                ),
+
+                // not matching, ignored, remote content to be retained post-rotaion
+                fle("not matching, top level file"),
+                dir("not matching, top-level dir, empty"),
+                dir("not matching, top-level dir, with content",
+                        fle("20180904120000-00-front.jpg"), // matching, nested file
+                        dir("2018-09-03"), // matching, nested folder
+                        dir("not matching, nested dir, empty"),
+                        dir("not matching, nested dir, with content",
+                                fle("not matching, nested file")
+                        )
+                )
+        )
+        testFixtureService.remoteStructureCreateFrom(remoteContentOriginal)
 
         // A set of files:
-        // - scattered across few, inconsecutive dates,
-        // - with varying numbers of files per day,
-        // - with total number large enough to warrant sending in a few batches,
-        // - with last batch containing fewer items than the max batch size
-        testFixtureService.createFilesWithDates(
-                TestFilesInput("2018-09-08", 20),
-                TestFilesInput("2018-09-10", 32),
-                TestFilesInput("2018-09-11", 5)
+        // - scattered across few, non-consecutive dates,
+        // - enough to trigger rotation of the oldest
+
+        val localContentToUpload = create(
+                // 2018-09-08
+                fle("20180908120000-00-front.jpg"),
+                fle("20180908120000-01-front.jpg"),
+                fle("20180908120000-02-front.jpg"),
+                fle("20180908120000-03-front.jpg"),
+                // 2018-09-09
+                fle("20180909120000-00-front.jpg"),
+                fle("20180909120000-01-front.jpg"),
+                fle("20180909120000-02-front.jpg"),
+                fle("20180909120000-03-front.jpg"),
+                fle("20180909120000-04-front.jpg"),
+                // 2018-09-11
+                fle("20180911120000-00-front.jpg"),
+                fle("20180911120000-01-front.jpg"),
+                fle("20180911120000-02-front.jpg"),
+                fle("20180911120000-03-front.jpg"),
+                fle("20180911120000-04-front.jpg"),
+                fle("20180911120000-05-front.jpg")
         )
 
-        // GDrive to report enough existing daily folders to trigger rotation of the oldest
 
-        val url = "http://localhost:${mockGDrivePort}/upload/drive/v3/files"
+        `when`("files appear in the monitored location") {
 
-//        givenThat(post(urlEqualTo("/upload/drive/v3/files"))
-//                .withQueryParam("uploadType", equalTo("multipart"))
-//                .willReturn(aResponse()
-//                        .withHeader("Content-Type", "application/json")
-//                        .withBody("""{"property":"MOCK RESPONSE"}""")
-//                )
-//        )
+            testFixtureService.localStructureCreateFrom(localContentToUpload)
 
-        println("URL: ${url}")
+            then("it uploads all local files and rotates the remote ones") {
 
-        `when`("app is started") {
+                // mix of freshly uploaded files and the remote rotation survivors
+                val remoteContentExpected = create(
 
-            then("it uploads all files in batches") {
-                verifyEventually(postRequestedFor(urlEqualTo("/upload/drive/v3/files")))
+                        // actual content, result of the newly uploaded files and the remote survivors of the rotation
+                        dir("2018-09-03",
+                                fle("20180903120000-00-front.jpg")
+                        ),
+                        dir("2018-09-08",
+                                fle("20180908120000-00-front.jpg"),
+                                fle("20180908120000-01-front.jpg"),
+                                fle("20180908120000-02-front.jpg"),
+                                fle("20180908120000-03-front.jpg")
+                        ),
+                        dir("2018-09-09",
+                                fle("20180909120000-00-front.jpg"),
+                                fle("20180909120000-01-front.jpg"),
+                                fle("20180909120000-02-front.jpg"),
+                                fle("20180909120000-03-front.jpg"),
+                                fle("20180909120000-04-front.jpg")
+                        ),
+                        dir("2018-09-11",
+                                fle("20180911120000-00-front.jpg"),
+                                fle("20180911120000-01-front.jpg"),
+                                fle("20180911120000-02-front.jpg"),
+                                fle("20180911120000-03-front.jpg"),
+                                fle("20180911120000-04-front.jpg"),
+                                fle("20180911120000-05-front.jpg")
+                        ),
+
+                        // not matching, ignored, remote content to be retained post-rotaion
+                        fle("not matching, top level file"),
+                        dir("not matching, top-level dir, empty"),
+                        dir("not matching, top-level dir, with content",
+                                fle("20180904120000-00-front.jpg"), // matching, nested file
+                                dir("2018-09-03"), // matching, nested folder
+                                dir("not matching, nested dir, empty"),
+                                dir("not matching, nested dir, with content",
+                                        fle("not matching, nested file")
+                                )
+                        )
+                )
+
+                eventually(120.seconds) {
+                    testFixtureService.remoteStructure() shouldBe remoteContentExpected
+                }
             }
         }
     }
 
 
 })
-
-
-// https://www.googleapis.com/drive/v3
-// https://developers.google.com/drive/api/v3/reference/
-

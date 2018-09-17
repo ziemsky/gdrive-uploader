@@ -8,6 +8,10 @@ secures in Google Drive.
 # Status
 Unusable - just started working on it.
 
+# Development
+## Testing
+See [testing.md](testing.md)
+
 ## Licence
 Entire source code in this repository is licenced to use as specified in [MIT licence][mit licence].
 
@@ -19,5 +23,5 @@ Summary of the intention for allowed use of the code from this repository:
 * Don't hold me responsible for any results of using this code.
 
 For more details of this licence see:
-* The [LICENCE][licence file] file included in this project.
-* [Licence][mit licence] section of [opensource.org].
+* The [LICENCE](LICENCE) file included in this project.
+* [MIT licence](https://opensource.org/licenses/MIT) section of [opensource.org].

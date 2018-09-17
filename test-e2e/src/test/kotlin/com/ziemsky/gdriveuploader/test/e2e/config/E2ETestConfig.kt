@@ -1,38 +1,31 @@
 package com.ziemsky.gdriveuploader.test.e2e.config
 
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.ziemsky.gdriveuploader.test.shared.data.TestFixtureService
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
+import com.ziemsky.gdriveuploader.test.shared.data.TestGDriveProvider
+import mu.KotlinLogging
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
-import java.nio.file.Files
+import java.nio.file.Paths
+
+private val log = KotlinLogging.logger {}
 
 @Configuration
 @PropertySource("classpath:test-e2e.properties")
-class E2ETestConfig(@Value("\${test.e2e.gdrive.port}") val mockGDrivePort: Int) {
-
-    companion object {
-        val log = LoggerFactory.getLogger(E2ETestConfig::class.java)
-    }
-
-    @Bean(destroyMethod = "stop", initMethod = "start")
-    fun wireMockServer(): WireMockServer {
-
-        val wireMockServer = WireMockServer(wireMockConfig().port(mockGDrivePort))
-        WireMock.configureFor("localhost", mockGDrivePort)
-        return wireMockServer
-    }
+class E2ETestConfig {
 
     @Bean
     fun testData(): TestFixtureService {
-        val testDirectory = Files.createTempDirectory(E2ETestConfig::class.qualifiedName)
 
-        log.info("Created temporary directory for test content: ${testDirectory}")
+        val drive = TestGDriveProvider( // todo (at least some) literals conigurable for different envs.
+                "uploader",
+                "tokens",
+                "/credentials.json",
+                "Uploader"
+        ).drive()
 
-        return TestFixtureService(testDirectory)
+        val testDirectory = Paths.get("/tmp/inbound") // todo configurable + clean after each test
+
+        return TestFixtureService(testDirectory, drive)
     }
 }
