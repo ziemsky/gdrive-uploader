@@ -1,12 +1,17 @@
-package com.ziemsky.uploader;
+package com.ziemsky.uploader.conf;
 
 import com.google.api.services.drive.Drive;
+import com.ziemsky.uploader.FileRepository;
+import com.ziemsky.uploader.GDriveFileRepository;
+import com.ziemsky.uploader.SecurerService;
+import com.ziemsky.uploader.conf.property.ConfigProperties;
+import com.ziemsky.uploader.conf.property.Config;
 import com.ziemsky.uploader.google.drive.GDriveProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +25,6 @@ import org.springframework.integration.scheduling.PollerMetadata;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Comparator;
 import java.util.List;
@@ -30,6 +34,7 @@ import static org.springframework.integration.dsl.Pollers.fixedDelay;
 
 @Configuration
 @EnableIntegration
+@EnableConfigurationProperties(ConfigProperties.class)
 public class UploaderConfig { // todo convert to Kotlin class
 
     private final static Logger log = LoggerFactory.getLogger(UploaderConfig.class);
@@ -39,9 +44,6 @@ public class UploaderConfig { // todo convert to Kotlin class
     private static final String FILES_INCOMING_CHANNEL = "incomingFilesChannel";
     private static final String FILES_BATCHED_TO_SECURE_CHANNEL = "filesBatchedToSecureChannel";
     private static final int POLLING_INTERVAL_IN_MILLIS = 100;
-
-
-    private @Value("${java.io.tmpdir:'/tmp'}/inbound") Path inboundDir;
 
     // todo make the cameras rename the files to jpg after upload
     // to prevent files being picked up by uploader before they've been fully uploaded by
@@ -59,15 +61,15 @@ public class UploaderConfig { // todo convert to Kotlin class
     //          |
     //      uploader
 
-    @Bean IntegrationFlow inboundFileReaderEndpoint() {
+    @Bean IntegrationFlow inboundFileReaderEndpoint(final Config config) {
 
-        log.info("Monitoring {}", inboundDir);
+        log.info("Folder being monitored for files to upload {}", config.monitoring().path());
 
         return IntegrationFlows.from(
             Files.inboundAdapter(
                 // todo switch from polling to watch service? See docs for caveats!:
                 // https://docs.spring.io/spring-integration/reference/html/files.html#watch-service-directory-scanner
-                inboundDir.toFile(),
+                config.monitoring().path().toFile(),
                 Comparator.comparing(
                     File::getName,
                     (leftFileName, rightFileName) -> -1 * leftFileName.compareTo(rightFileName)

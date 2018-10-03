@@ -26,7 +26,7 @@ plugins {
 
     id("com.github.johnrengelman.processes") version "0.5.0" apply false
 
-    // id("com.dorongold.task-tree") version "1.3"
+    id("com.dorongold.task-tree") version "1.3.1"
 }
 
 subprojects {
@@ -44,7 +44,11 @@ subprojects {
 
 }
 
-//dependencies {
+dependencies {
+
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    compileOnly("org.springframework.boot:spring-boot-configuration-processor")
+
 //    compile(kotlin("stdlib-jdk8"))
 //    compile(kotlin("reflect"))
 //
@@ -55,7 +59,7 @@ subprojects {
 //    testCompile("io.kotlintest:kotlintest-runner-junit5:3.1.8")
 //
 //    testCompile("io.mockk:mockk:1.8.7")
-//}
+}
 
 // TASKS
 
@@ -63,6 +67,3 @@ subprojects {
 //    useJUnitPlatform()
 //}
 
-tasks.getByPath(":test-e2e:test")
-        .dependsOn(tasks.getByPath(":application:appStart"))
-        .finalizedBy(tasks.getByPath(":application:appStop"))

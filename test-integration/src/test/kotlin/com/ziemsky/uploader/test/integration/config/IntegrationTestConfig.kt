@@ -28,7 +28,7 @@ class IntegrationTestConfig {
     @Bean
     fun testData(testDirectory: Path): TestFixtureService {
 
-        val drive = TestGDriveProvider( // todo (at least some) literals conigurable for different envs.
+        val drive = TestGDriveProvider( // todo (at least some) literals configurable for different envs.
                 "uploader",
                 "tokens",
                 "/credentials.json",
@@ -41,7 +41,7 @@ class IntegrationTestConfig {
 
     @Bean
     internal fun drive(): Drive {
-        return GDriveProvider( // todo (at least some) literals conigurable for different envs.
+        return GDriveProvider( // todo (at least some) literals configurable for different envs.
                 "uploader",
                 "tokens",
                 "/credentials.json",

@@ -30,19 +30,41 @@ dependencies {
     testImplementation("com.google.apis:google-api-services-drive:v3-rev130-1.25.0")
 }
 
-val deleteTempTestContent by tasks.registering(Delete::class) {
-    delete = setOf("/tmp/inbound") // todo configuration common to the app and tests
+val testContentDir = createTempDir("uploader-e2e-test_", ".tmp")
+
+val testContentSetUp by tasks.registering(Task::class) {
+
+    doFirst {
+        // set dynamic properties for the application
+        rootProject.extra.set("appStartArgs", "--uploader.monitoring.path=$testContentDir")
+    }
 
     doLast {
-        file("/tmp/inbound").mkdirs()
+        file(testContentDir).mkdirs()
     }
 }
 
-tasks.getByPath(":application:appStart").mustRunAfter(deleteTempTestContent) // todo cleanup
+val testContentTearDown by tasks.registering(Delete::class) {
+    delete = setOf(testContentDir)
+}
 
+tasks.getByPath(":application:appStart").mustRunAfter(testContentSetUp)
+testContentTearDown.get().mustRunAfter(":application:appStop")
 
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
 
-    dependsOn(tasks.named<Delete>("deleteTempTestContent"))
+    // set dynamic properties for the test code
+    systemProperty("test.e2e.uploader.monitoring.path", testContentDir)
+
+
+    dependsOn(
+            testContentSetUp.get(),
+            tasks.getByPath(":application:appStart")
+    )
+
+    finalizedBy(
+            testContentTearDown.get(),
+            tasks.getByPath(":application:appStop")
+    )
 }

@@ -11,6 +11,7 @@ import io.kotlintest.specs.BehaviorSpec
 import org.springframework.test.context.ContextConfiguration
 import java.io.File
 import java.nio.file.Path
+import java.util.Arrays.asList
 
 @ContextConfiguration(classes = [(IntegrationTestConfig::class)])
 class GDriveFileRepositorySpec(drive: Drive,
@@ -25,16 +26,19 @@ class GDriveFileRepositorySpec(drive: Drive,
 
         val randomComponent = System.nanoTime()
 
+        val testFileName = "testFileOne_$randomComponent"
+
         val expectedStructure = create(
-                fle("testFileOne_$randomComponent", "random content $randomComponent")
+                fle(testFileName, "random content $randomComponent")
         ).saveIn(testDirectory)
 
-        val filesToSecure: List<File> = testDirectory.toFile().walkTopDown().filter { file -> file.isFile }.toList()
+        val filesToSecure: List<File> = asList(File(testDirectory.toFile(), testFileName))
 
 
         `when`("securing the file") {
 
             gDriveFileRepository.upload(filesToSecure)
+
 
             then("file is uploaded") {
                 // todo use drive to verify state of the remote files (wrapped in some test service?)

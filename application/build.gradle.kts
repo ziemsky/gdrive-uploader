@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.daemon.KotlinCompileDaemon.log
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
+import org.springframework.boot.gradle.tasks.run.BootRun
 
 import java.util.concurrent.TimeUnit.*
 
@@ -15,7 +16,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.2.RELEASE")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.1.RELEASE")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.70")
         classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.70")
 
@@ -45,6 +46,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-integration")
     implementation("org.springframework.integration:spring-integration-file")
     implementation("io.github.microutils:kotlin-logging:1.6.10")
+    implementation("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
+
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     // Google Drive client
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.25.0")
@@ -86,21 +90,25 @@ tasks.named<BootJar>("bootJar") {
     baseName = "uploader"
 }
 
-
 val pidFile = File(project.buildDir, "application.pid")
 
 val appStart by tasks.registering(JavaFork::class) {
     group = "Application"
     description = """Starts the application from the assembled JAR file as a background process.
                   |  Use to run the app in the background for e2e tests; for normal run call bootRun task.
+                  |
                   """.trimMargin()
 
     main = "-jar"
-    args(listOf(
-            "build/libs/uploader.jar",
-            "--spring.pid.file=${pidFile.path}",
-            "--spring.pid.fail-on-write-error=true"
-    ))
+
+    doFirst {
+        args(listOf(
+                "build/libs/uploader.jar",
+                "--spring.pid.file=${pidFile.path}",
+                "--spring.pid.fail-on-write-error=true",
+                rootProject.findProperty("appStartArgs") ?: ""
+        ))
+    }
     // args(listOf(sourceSets["main"].output))
 
     onlyIf {
@@ -108,7 +116,8 @@ val appStart by tasks.registering(JavaFork::class) {
     }
 
     doLast {
-        println("Looking for PID file ${pidFile.absolutePath}")
+        logger.info("Waiting for application to start (waiting for PID file ${pidFile.absolutePath} to show up).")
+
         await.with()
                 .pollDelay(1, SECONDS)
                 .pollInterval(1, SECONDS)
@@ -123,10 +132,10 @@ val appStart by tasks.registering(JavaFork::class) {
 val appStop by tasks.registering(Exec::class) {
     group = "Application"
     description = """Kills process identified by PID found in file application.pid.
-                      |  Uses command 'kill' which, currently, limits its use to Unix-based systems.
+                      |  Uses system command 'kill' which, currently, limits its use to Unix-based systems.
         """.trimMargin()
 
-    executable = "kill"
+    executable = "kill" // todo see https://github.com/profesorfalken/jProcesses for cross-platform kill
 
     onlyIf {
         pidFile.exists()

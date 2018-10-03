@@ -3,10 +3,11 @@ package com.ziemsky.gdriveuploader.test.e2e.config
 import com.ziemsky.gdriveuploader.test.shared.data.TestFixtureService
 import com.ziemsky.gdriveuploader.test.shared.data.TestGDriveProvider
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
-import java.nio.file.Paths
+import java.nio.file.Path
 
 private val log = KotlinLogging.logger {}
 
@@ -15,16 +16,16 @@ private val log = KotlinLogging.logger {}
 class E2ETestConfig {
 
     @Bean
-    fun testData(): TestFixtureService {
+    fun testDataService(@Value("\${test.e2e.uploader.monitoring.path}") testDirectory: Path): TestFixtureService {
 
-        val drive = TestGDriveProvider( // todo (at least some) literals conigurable for different envs.
+        log.info("Using test data from directory: '$testDirectory'")
+
+        val drive = TestGDriveProvider( // todo credentials configurable for different envs.
                 "uploader",
                 "tokens",
                 "/credentials.json",
                 "Uploader"
         ).drive()
-
-        val testDirectory = Paths.get("/tmp/inbound") // todo configurable + clean after each test
 
         return TestFixtureService(testDirectory, drive)
     }
