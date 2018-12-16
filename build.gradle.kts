@@ -1,38 +1,73 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.70")
-        classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.70")
-    }
-}
-
 plugins {
     java
+    kotlin("jvm") apply false
 
-    //`kotlin-dsl`
-    //https://github.com/gradle/kotlin-dsl/blob/master/doc/getting-started/Configuring-Plugins.md
-
-    kotlin("jvm") version "1.2.70" apply false
-    kotlin("plugin.spring") version "1.2.70" apply false
-
-    id("org.springframework.boot") version "2.0.2.RELEASE" apply false
-    id("io.spring.dependency-management") version "1.0.6.RELEASE" apply false
-
-    id("com.github.johnrengelman.processes") version "0.5.0" apply false
-
-    id("com.dorongold.task-tree") version "1.3.1"
+    id("io.spring.dependency-management")
+    id("com.dorongold.task-tree")
+    id("com.github.ben-manes.versions")
 }
+
+
+allprojects {
+    configurations.all { resolutionStrategy.failOnVersionConflict() }
+}
+
+// defined in gradle.properties; done this way to support referencing from buildscript
+val awaitilityVersion: String by rootProject
+val gDriveVersion = "1.27.0"
 
 subprojects {
     repositories {
         mavenCentral()
         jcenter()
+    }
+
+    apply(plugin = "io.spring.dependency-management")
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+
+    dependencyManagement {
+        // Note: io.spring.dependency-management plugin doesn't seem to support excluding transitive dependencies
+        // and a number of main dependencies include conflicting versions of transitive ones (as flagged by
+        // resolutionStrategy.failOnVersionConflict()). Declaring first-level transitive dependency to apply exclusion
+        // to it doesn't help either (e.g. io.github.microutils:kotlin-logging:1.6.22).
+        // For this reason, offending transitive dependencies had to be excluded at the dependency level in individual
+        // sub-projects rather than here.
+
+        dependencies {
+            dependencySet("org.jetbrains.kotlin:1.3.11") {
+                entry("kotlin-stdlib-jdk8")
+                entry("kotlin-stdlib")
+                entry("kotlin-reflect")
+            }
+
+            dependencySet("org.springframework:5.1.3.RELEASE") {
+                entry("spring-web")
+                entry("spring-test")
+                entry("spring-context")
+            }
+
+            dependency("io.github.microutils:kotlin-logging:1.6.22")
+
+            dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
+
+            // Google Drive client
+            dependency("com.google.oauth-client:google-oauth-client-jetty:$gDriveVersion")
+            dependency("com.google.apis:google-api-services-drive:v3-rev20181101-$gDriveVersion")
+            dependency("com.google.api-client:google-api-client:$gDriveVersion")
+
+            dependencySet("io.kotlintest:3.1.11") {
+                entry("kotlintest-runner-junit5")
+                entry("kotlintest-extensions-spring")
+            }
+
+            dependency("io.mockk:mockk:1.8.13")
+
+            dependency("com.fasterxml.jackson.core:jackson-databind:2.9.8")
+
+            dependency("org.awaitility:awaitility-kotlin:$awaitilityVersion")
+        }
     }
 
     tasks.withType<KotlinCompile> {
@@ -41,29 +76,10 @@ subprojects {
             freeCompilerArgs = listOf("-Xjsr305=strict")
         }
     }
-
 }
 
-dependencies {
 
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("org.springframework.boot:spring-boot-configuration-processor")
-
-//    compile(kotlin("stdlib-jdk8"))
-//    compile(kotlin("reflect"))
-//
-//    compile("org.springframework.boot:spring-boot-starter-integration")
-//    compile("org.springframework.integration:spring-integration-file")
-//
-//    testCompile("org.springframework.boot:spring-boot-starter-test")
-//    testCompile("io.kotlintest:kotlintest-runner-junit5:3.1.8")
-//
-//    testCompile("io.mockk:mockk:1.8.7")
-}
-
-// TASKS
-
-//val test by tasks.getting(Test::class) {
-//    useJUnitPlatform()
-//}
-
+tasks.getByPath(":application:check").mustRunAfter(":test-shared-resources:check")
+tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")
+tasks.getByPath(":test-e2e:check").mustRunAfter(":test-integration:check")
+tasks.getByPath(":check").mustRunAfter(":test-e2e:check")

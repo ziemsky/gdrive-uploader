@@ -18,8 +18,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.dsl.channel.MessageChannelSpec;
-import org.springframework.integration.dsl.channel.MessageChannels;
+import org.springframework.integration.dsl.MessageChannelSpec;
+import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.scheduling.PollerMetadata;
 
@@ -63,7 +63,7 @@ public class UploaderConfig { // todo convert to Kotlin class
 
     @Bean IntegrationFlow inboundFileReaderEndpoint(final Config config) {
 
-        log.info("Folder being monitored for files to upload {}", config.monitoring().path());
+        log.info("Monitoring folder for files to upload: {}", config.monitoring().path());
 
         return IntegrationFlows.from(
             Files.inboundAdapter(

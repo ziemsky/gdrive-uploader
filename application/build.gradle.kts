@@ -1,7 +1,6 @@
 import com.github.jengelman.gradle.plugins.processes.tasks.JavaFork
 import org.awaitility.kotlin.await
 import org.jetbrains.kotlin.daemon.KotlinCompileDaemon.log
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import org.springframework.boot.gradle.tasks.run.BootRun
@@ -10,31 +9,19 @@ import java.util.concurrent.TimeUnit.*
 
 
 buildscript {
-
-    repositories {
-        mavenCentral()
-    }
-
+    val awaitilityVersion: String by rootProject
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.1.RELEASE")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.2.70")
-        classpath("org.jetbrains.kotlin:kotlin-allopen:1.2.70")
-
-        classpath("org.awaitility:awaitility-kotlin:3.1.2")
+        classpath("org.awaitility:awaitility-kotlin:$awaitilityVersion")
     }
 }
 
 plugins {
     java
 
-    //`kotlin-dsl`
-    //https://github.com/gradle/kotlin-dsl/blob/master/doc/getting-started/Configuring-Plugins.md
-
-    kotlin("jvm")
+    kotlin("plugin.allopen")
     kotlin("plugin.spring")
 
     id("org.springframework.boot")
-    id("io.spring.dependency-management")
 
     id("com.github.johnrengelman.processes")
 }
@@ -45,21 +32,24 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-integration")
     implementation("org.springframework.integration:spring-integration-file")
-    implementation("io.github.microutils:kotlin-logging:1.6.10")
-    implementation("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
+
+    implementation("io.github.microutils:kotlin-logging") {
+        exclude(group = "org.jetbrains.kotlin")
+    }
+    implementation("com.github.ladutsko:spring-boot-starter-hocon")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     // Google Drive client
-    implementation("com.google.oauth-client:google-oauth-client-jetty:1.25.0")
-    implementation("com.google.apis:google-api-services-drive:v3-rev130-1.25.0")
-    implementation("com.google.api-client:google-api-client:1.25.0")
+    implementation("com.google.oauth-client:google-oauth-client-jetty")
+    implementation("com.google.apis:google-api-services-drive")
+    implementation("com.google.api-client:google-api-client")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    testImplementation("io.kotlintest:kotlintest-runner-junit5:3.1.8")
+    testImplementation("io.kotlintest:kotlintest-runner-junit5")
 
-    testImplementation("io.mockk:mockk:1.8.7")
+    testImplementation("io.mockk:mockk")
 }
 
 // TASKS
@@ -109,7 +99,6 @@ val appStart by tasks.registering(JavaFork::class) {
                 rootProject.findProperty("appStartArgs") ?: ""
         ))
     }
-    // args(listOf(sourceSets["main"].output))
 
     onlyIf {
         !pidFile.exists()
