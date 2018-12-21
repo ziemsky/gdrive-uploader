@@ -4,17 +4,18 @@ import com.google.api.services.drive.Drive;
 import com.ziemsky.uploader.FileRepository;
 import com.ziemsky.uploader.GDriveFileRepository;
 import com.ziemsky.uploader.SecurerService;
-import com.ziemsky.uploader.conf.property.ConfigProperties;
 import com.ziemsky.uploader.conf.property.Config;
+import com.ziemsky.uploader.conf.property.ConfigProperties;
 import com.ziemsky.uploader.google.drive.GDriveProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import mu.KLogger;
+import mu.KotlinLogging;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
@@ -37,7 +38,7 @@ import static org.springframework.integration.dsl.Pollers.fixedDelay;
 @EnableConfigurationProperties(ConfigProperties.class)
 public class UploaderConfig { // todo convert to Kotlin class
 
-    private final static Logger log = LoggerFactory.getLogger(UploaderConfig.class);
+    private KLogger log = KotlinLogging.INSTANCE.logger(UploaderConfig.class.getName());
 
     private static final int BATCH_SIZE = 4;
 
@@ -61,8 +62,11 @@ public class UploaderConfig { // todo convert to Kotlin class
     //          |
     //      uploader
 
-    @Bean IntegrationFlow inboundFileReaderEndpoint(final Config config) {
+    @Bean IntegrationFlow inboundFileReaderEndpoint(final Config config, final Environment env) {
 
+        log.info("    spring.config.additional-location: {}", env.getProperty("spring.config.additional-location"));
+        log.info("               spring.config.location: {}", env.getProperty("spring.config.location"));
+        log.info("                               Config: {}", config);
         log.info("Monitoring folder for files to upload: {}", config.monitoring().path());
 
         return IntegrationFlows.from(
@@ -108,12 +112,12 @@ public class UploaderConfig { // todo convert to Kotlin class
         return new SecurerService(fileRepository);
     }
 
-    @Bean Drive drive() {
+    @Bean Drive drive(final Config config) {
         return new GDriveProvider( // todo (at least some) literals conigurable for different envs.
-            "uploader",
-            "tokens",
-            "/credentials.json",
-            "Uploader"
+            config.google().drive().applicationUserName(),
+            config.google().drive().tokensDirectory(),
+            config.google().drive().credentialsFile(),
+            config.google().drive().applicationName()
         ).drive();
     }
 

@@ -38,6 +38,8 @@ dependencies {
     }
     implementation("com.github.ladutsko:spring-boot-starter-hocon")
 
+    implementation("org.hibernate.validator:hibernate-validator")
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     // Google Drive client
@@ -73,11 +75,11 @@ val test by tasks.getting(Test::class) {
 // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/html/#packaging-executable-and-normal
 val jar by tasks.named<Jar>("jar") {
     enabled = true
-    baseName = "uploader"
+    archiveBaseName.set("uploader")
 }
 tasks.named<BootJar>("bootJar") {
     mustRunAfter(jar)
-    baseName = "uploader"
+    archiveBaseName.set("uploader")
 }
 
 val pidFile = File(project.buildDir, "application.pid")
@@ -91,13 +93,23 @@ val appStart by tasks.registering(JavaFork::class) {
 
     main = "-jar"
 
+    workingDir = rootProject.projectDir // config files specify paths relative to root project's dir
+
     doFirst {
-        args(listOf(
-                "build/libs/uploader.jar",
+        val runEnvironment = rootProject.findProperty("uploader.run.environment") as String
+
+        val configLocation = "${rootProject.projectDir}/config/$runEnvironment/"
+
+        val arguments = mutableListOf(
+                "${project.buildDir}/libs/uploader.jar",
                 "--spring.pid.file=${pidFile.path}",
                 "--spring.pid.fail-on-write-error=true",
-                rootProject.findProperty("appStartArgs") ?: ""
-        ))
+                "--spring.config.additional-location=$configLocation"
+        )
+
+        arguments.addAll(parseAppStartArgs())
+
+        args(arguments)
     }
 
     onlyIf {
@@ -112,7 +124,6 @@ val appStart by tasks.registering(JavaFork::class) {
                 .pollInterval(1, SECONDS)
                 .timeout(10, SECONDS)
                 .until({ pidFile.exists() })
-
     }
 
     dependsOn(tasks.named<BootJar>("bootJar"))
@@ -133,4 +144,10 @@ val appStop by tasks.registering(Exec::class) {
     doFirst {
         args(listOf(pidFile.readText()))
     }
+}
+
+fun parseAppStartArgs(): List<String> {
+    return ((rootProject.findProperty("appStartArgs") ?: "") as String)
+            .split("(?<!\\\\)\\s+".toRegex()) // break down on unescaped white spaces
+            .map { it.replace("\\ ", " ") }
 }

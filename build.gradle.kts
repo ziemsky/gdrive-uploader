@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.api.tasks.testing.Test
 
 plugins {
     java
@@ -9,6 +10,10 @@ plugins {
     id("com.github.ben-manes.versions")
 }
 
+// todo document uploader.run.environment in readme
+if (!project.hasProperty("uploader.run.environment")) {
+    project.extra.set("uploader.run.environment", "local")
+}
 
 allprojects {
     configurations.all { resolutionStrategy.failOnVersionConflict() }
@@ -67,6 +72,9 @@ subprojects {
             dependency("com.fasterxml.jackson.core:jackson-databind:2.9.8")
 
             dependency("org.awaitility:awaitility-kotlin:$awaitilityVersion")
+
+            // Spring Boot starters already add Hibernate Validator but in a slightly older version
+            dependency("org.hibernate.validator:hibernate-validator:6.0.14.Final")
         }
     }
 
@@ -75,6 +83,10 @@ subprojects {
             jvmTarget = "1.8"
             freeCompilerArgs = listOf("-Xjsr305=strict")
         }
+    }
+
+    tasks.withType<Test> {
+        systemProperties["uploader.run.environment"] = rootProject.findProperty("uploader.run.environment")
     }
 }
 

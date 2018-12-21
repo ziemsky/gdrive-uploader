@@ -14,11 +14,13 @@ import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import java.io.File
 import java.io.InputStreamReader
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class TestGDriveProvider(
         val applicationUserName: String,
-        val tokensDirectory: String,
-        val credentialsFilePath: String,
+        val tokensDirectory: Path,
+        val credentialsFilePath: Path,
         val applicationName: String
 ) {
 
@@ -41,11 +43,10 @@ class TestGDriveProvider(
                            httpTransport: HttpTransport,
                            jsonFactory: JsonFactory,
                            scopes: Collection<String>,
-                           tokensDirectory: String, // todo change depending on prod/dev/test context
-                           credentialsFilePath: String): Credential {
+                           tokensDirectory: Path, // todo change depending on prod/dev/test context
+                           credentialsFilePath: Path): Credential {
 
-        val credentialsInputStream = TestGDriveProvider::class.java.getResourceAsStream(credentialsFilePath) // todo try with resources
-        val clientSecrets = GoogleClientSecrets.load(jsonFactory, InputStreamReader(credentialsInputStream))
+        val clientSecrets = GoogleClientSecrets.load(jsonFactory, InputStreamReader(credentialsFilePath.toFile().inputStream())) // todo try with resources
 
         val flow = GoogleAuthorizationCodeFlow.Builder(
                 httpTransport,
@@ -53,7 +54,7 @@ class TestGDriveProvider(
                 clientSecrets,
                 scopes
         )
-                .setDataStoreFactory(FileDataStoreFactory(File(tokensDirectory)))
+                .setDataStoreFactory(FileDataStoreFactory(tokensDirectory.toFile()))
                 .setAccessType("offline")
                 .build()
 

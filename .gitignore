@@ -24,3 +24,8 @@ build/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+### Google Credentials ###
+StoredCredential
+credentials.json
+secrets.tar

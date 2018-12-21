@@ -12,13 +12,13 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
-import java.io.File
 import java.io.InputStreamReader
+import java.nio.file.Path
 
 class GDriveProvider(
         val applicationUserName: String,
-        val tokensDirectory: String,
-        val credentialsFilePath: String,
+        val tokensDirectory: Path,
+        val credentialsFilePath: Path,
         val applicationName: String
 ) {
 
@@ -41,10 +41,13 @@ class GDriveProvider(
                            httpTransport: HttpTransport,
                            jsonFactory: JsonFactory,
                            scopes: Collection<String>,
-                           tokensDirectory: String, // todo change depending on prod/dev/test context
-                           credentialsFilePath: String): Credential {
+                           tokensDirectory: Path, // todo change depending on prod/dev/test context
+                           credentialsFilePath: Path): Credential {
 
-        val credentialsInputStream = GDriveProvider::class.java.getResourceAsStream(credentialsFilePath) // todo try with resources
+        // todo validate inputs (missing values, files)
+        // todo throw custom exceptions
+
+        val credentialsInputStream = credentialsFilePath.toFile().inputStream() // todo try with resources
         val clientSecrets = GoogleClientSecrets.load(jsonFactory, InputStreamReader(credentialsInputStream))
 
         val flow = GoogleAuthorizationCodeFlow.Builder(
@@ -53,7 +56,7 @@ class GDriveProvider(
                 clientSecrets,
                 scopes
         )
-                .setDataStoreFactory(FileDataStoreFactory(File(tokensDirectory)))
+                .setDataStoreFactory(FileDataStoreFactory(tokensDirectory.toFile()))
                 .setAccessType("offline")
                 .build()
 

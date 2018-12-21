@@ -1,4 +1,4 @@
-
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("plugin.spring")
@@ -16,6 +16,7 @@ dependencies {
     testImplementation("io.kotlintest:kotlintest-runner-junit5")
     testImplementation("io.kotlintest:kotlintest-extensions-spring")
 
+    testRuntime("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
 
     // Google Drive client
     testImplementation("com.google.oauth-client:google-oauth-client-jetty")
@@ -27,8 +28,20 @@ dependencies {
     }
 
     testRuntime("com.fasterxml.jackson.core:jackson-databind")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
+}
+repositories {
+    mavenCentral()
+}
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
+val compileTestKotlin: KotlinCompile by tasks
+compileTestKotlin.kotlinOptions {
+    jvmTarget = "1.8"
 }

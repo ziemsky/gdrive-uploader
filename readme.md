@@ -88,8 +88,9 @@ Run Gradle tasks:
 
 Assuming executing Gradle wrapper (recommended) from project's root directory, examples with custom options passed in:
 ```
-./gradlew :application:appStart -DappStartArgs='--spring.config.additional-location=file:/tmp/app/cnf/ --another.option.to.override=<another-value>'
+./gradlew :application:appStart -PappStartArgs='--spring.config.additional-location=file:/tmp/app/cnf/ --another.option.to.override=anotherValue\ withEscapedSpace'
 ```
+When calling task `appStart` with arguments that contain spaces make sure to escape those spaces with `\` as above.  
 
 ```
 ./gradlew :application:bootRun --args='--uploader.monitoring.path=/tmp/nodir --another.option.to.override=<some-value>'
@@ -103,7 +104,7 @@ Assuming executing Gradle wrapper (recommended) from project's root directory, e
 See [testing.md](testing.md)
 
 # Licence
-Entire source code in this repository is licenced to use as specified in [MIT licence][mit licence].
+Entire source code in this repository is licenced to use as specified in [MIT licence][opensource.org-mit].
 
 Summary of the intention for allowed use of the code from this repository: 
 * Feel free to use it in any form (source code or binary) and for any purpose (personal use or commercial).
