@@ -8,7 +8,7 @@ val pluginVersionsByIds = mapOf(
         "com.github.ben-manes.versions" to "0.20.0"
 )
 
-val kotlinVersion = "1.3.11" // todo tie to the one in main build script
+val kotlinVersion = "1.3.20" // todo tie to the one in main build script
 
 val pluginVersionsByNamespaces = mapOf(
         "org.jetbrains.kotlin" to kotlinVersion,
