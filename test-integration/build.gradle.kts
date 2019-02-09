@@ -16,7 +16,7 @@ dependencies {
     testImplementation("io.kotlintest:kotlintest-runner-junit5")
     testImplementation("io.kotlintest:kotlintest-extensions-spring")
 
-    testRuntime("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
+    testImplementation("com.typesafe:config")
 
     // Google Drive client
     testImplementation("com.google.oauth-client:google-oauth-client-jetty")

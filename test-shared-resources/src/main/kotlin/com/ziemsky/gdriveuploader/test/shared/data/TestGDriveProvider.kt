@@ -43,7 +43,7 @@ class TestGDriveProvider(
                            httpTransport: HttpTransport,
                            jsonFactory: JsonFactory,
                            scopes: Collection<String>,
-                           tokensDirectory: Path, // todo change depending on prod/dev/test context
+                           tokensDirectory: Path,
                            credentialsFilePath: Path): Credential {
 
         val clientSecrets = GoogleClientSecrets.load(jsonFactory, InputStreamReader(credentialsFilePath.toFile().inputStream())) // todo try with resources

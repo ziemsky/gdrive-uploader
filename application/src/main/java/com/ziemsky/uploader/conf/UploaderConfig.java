@@ -113,7 +113,7 @@ public class UploaderConfig { // todo convert to Kotlin class
     }
 
     @Bean Drive drive(final Config config) {
-        return new GDriveProvider( // todo (at least some) literals conigurable for different envs.
+        return new GDriveProvider(
             config.google().drive().applicationUserName(),
             config.google().drive().tokensDirectory(),
             config.google().drive().credentialsFile(),

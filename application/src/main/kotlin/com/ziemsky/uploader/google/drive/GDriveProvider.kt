@@ -41,7 +41,7 @@ class GDriveProvider(
                            httpTransport: HttpTransport,
                            jsonFactory: JsonFactory,
                            scopes: Collection<String>,
-                           tokensDirectory: Path, // todo change depending on prod/dev/test context
+                           tokensDirectory: Path,
                            credentialsFilePath: Path): Credential {
 
         // todo validate inputs (missing values, files)

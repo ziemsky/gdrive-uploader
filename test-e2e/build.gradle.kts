@@ -25,6 +25,8 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin")
     }
 
+    testImplementation("com.typesafe:config")
+
     // Google Drive client
     testImplementation("com.google.apis:google-api-services-drive")
 }

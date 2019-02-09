@@ -56,6 +56,7 @@ subprojects {
             dependency("io.github.microutils:kotlin-logging:1.6.22")
 
             dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
+            dependency("com.typesafe:config:1.3.3")
 
             // Google Drive client
             dependency("com.google.oauth-client:google-oauth-client-jetty:$gDriveVersion")

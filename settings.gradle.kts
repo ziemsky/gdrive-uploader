@@ -35,7 +35,12 @@ pluginManagement {
                 useVersion(pluginVersionsByNamespaces[pluginNamespace])
 
             } else {
-                logger.warn("No version configured in plugin management for id $pluginId in namespace $pluginNamespace")
+                if ("org.gradle" == pluginNamespace) {
+                    // Versions of plugins from namespace 'org.gradle' are implicitly configured by current version of
+                    // Gradle used.
+                } else {
+                    logger.warn("No version configured in plugin management for id $pluginId in namespace $pluginNamespace")
+                }
             }
         }
     }
