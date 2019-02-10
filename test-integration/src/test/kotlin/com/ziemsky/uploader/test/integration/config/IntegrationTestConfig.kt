@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger {}
 class IntegrationTestConfig {
 
     @Bean
-    fun config(
+    fun testProperties(
             @Value("../config/\${uploader.run.environment:local}/test-integration.conf") configFilePath: Path
     ): TestProperties {
         val config = ConfigFactory.parseFile(configFilePath.toFile())

@@ -4,8 +4,6 @@ import com.google.api.services.drive.Drive;
 import com.ziemsky.uploader.FileRepository;
 import com.ziemsky.uploader.GDriveFileRepository;
 import com.ziemsky.uploader.SecurerService;
-import com.ziemsky.uploader.conf.property.Config;
-import com.ziemsky.uploader.conf.property.ConfigProperties;
 import com.ziemsky.uploader.google.drive.GDriveProvider;
 import mu.KLogger;
 import mu.KotlinLogging;
@@ -25,8 +23,6 @@ import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.scheduling.PollerMetadata;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +31,7 @@ import static org.springframework.integration.dsl.Pollers.fixedDelay;
 
 @Configuration
 @EnableIntegration
-@EnableConfigurationProperties(ConfigProperties.class)
+@EnableConfigurationProperties(MutableUploaderConfigProperties.class)
 public class UploaderConfig { // todo convert to Kotlin class
 
     private KLogger log = KotlinLogging.INSTANCE.logger(UploaderConfig.class.getName());
@@ -62,7 +58,7 @@ public class UploaderConfig { // todo convert to Kotlin class
     //          |
     //      uploader
 
-    @Bean IntegrationFlow inboundFileReaderEndpoint(final Config config, final Environment env) {
+    @Bean IntegrationFlow inboundFileReaderEndpoint(final UploaderConfigProperties config, final Environment env) {
 
         log.info("    spring.config.additional-location: {}", env.getProperty("spring.config.additional-location"));
         log.info("               spring.config.location: {}", env.getProperty("spring.config.location"));
@@ -112,7 +108,7 @@ public class UploaderConfig { // todo convert to Kotlin class
         return new SecurerService(fileRepository);
     }
 
-    @Bean Drive drive(final Config config) {
+    @Bean Drive drive(final UploaderConfigProperties config) {
         return new GDriveProvider(
             config.google().drive().applicationUserName(),
             config.google().drive().tokensDirectory(),
@@ -121,7 +117,7 @@ public class UploaderConfig { // todo convert to Kotlin class
         ).drive();
     }
 
-    @Bean FileRepository repository(final Drive drive) throws GeneralSecurityException, IOException {
+    @Bean FileRepository repository(final Drive drive) {
 
         return new GDriveFileRepository(drive);
     }
