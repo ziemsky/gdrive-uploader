@@ -2,7 +2,7 @@ package com.ziemsky.gdriveuploader.test.e2e.config
 
 import com.typesafe.config.ConfigBeanFactory
 import com.typesafe.config.ConfigFactory
-import com.ziemsky.gdriveuploader.test.shared.data.TestFixtureService
+import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
 import com.ziemsky.gdriveuploader.test.shared.data.TestGDriveProvider
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
@@ -32,7 +32,7 @@ class E2ETestConfig {
     fun testDataService(
             @Value("\${test.e2e.uploader.monitoring.path}") testDirectory: Path,
             config: TestProperties
-    ): TestFixtureService {
+    ): TestFixtures {
 
         log.info { "Using test data from directory: '$testDirectory'" }
 
@@ -43,6 +43,6 @@ class E2ETestConfig {
                 config.applicationName()
         ).drive()
 
-        return TestFixtureService(testDirectory, drive)
+        return TestFixtures(testDirectory, drive)
     }
 }

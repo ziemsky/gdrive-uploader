@@ -18,7 +18,7 @@ import java.nio.file.Paths
 private val log = KotlinLogging.logger {}
 private val GOOGLE_DRIVE_FOLDER_MIMETYPE = "application/vnd.google-apps.folder"
 
-class TestFixtureService( // todo make local fixtures handled separately from remote?
+class TestFixtures( // todo make local fixtures handled separately from remote?
         private val testDirectory: Path,
         private val drive: Drive
 ) {
@@ -59,8 +59,6 @@ class TestFixtureService( // todo make local fixtures handled separately from re
         val fsItems: List<FsItem> = children(root.id, fullUndeletedGDriveContent.files)
 
         val fsStructure = FsStructure.create(fsItems)
-
-        log.debug("Entire GDrive FsStructure: \n\n\n\n{}\n\n\n\n", fsStructure)
 
         return fsStructure
     }

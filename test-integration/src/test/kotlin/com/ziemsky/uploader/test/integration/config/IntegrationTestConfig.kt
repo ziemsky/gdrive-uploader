@@ -3,7 +3,7 @@ package com.ziemsky.uploader.test.integration.config
 import com.google.api.services.drive.Drive
 import com.typesafe.config.ConfigBeanFactory
 import com.typesafe.config.ConfigFactory
-import com.ziemsky.gdriveuploader.test.shared.data.TestFixtureService
+import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
 import com.ziemsky.gdriveuploader.test.shared.data.TestGDriveProvider
 import com.ziemsky.uploader.google.drive.GDriveProvider
 import mu.KotlinLogging
@@ -40,7 +40,7 @@ class IntegrationTestConfig {
     }
 
     @Bean
-    fun testData(testDirectory: Path, config: TestProperties): TestFixtureService {
+    fun testData(testDirectory: Path, config: TestProperties): TestFixtures {
 
         val drive = TestGDriveProvider(
                 config.applicationUserName(),
@@ -49,7 +49,7 @@ class IntegrationTestConfig {
                 config.applicationName()
         ).drive()
 
-        return TestFixtureService(testDirectory, drive)
+        return TestFixtures(testDirectory, drive)
     }
 
     @Bean

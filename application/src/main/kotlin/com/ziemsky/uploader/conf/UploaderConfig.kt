@@ -3,8 +3,9 @@ package com.ziemsky.uploader.conf
 import com.google.api.services.drive.Drive
 import com.ziemsky.uploader.FileRepository
 import com.ziemsky.uploader.GDriveFileRepository
-import com.ziemsky.uploader.SecurerService
+import com.ziemsky.uploader.Securer
 import com.ziemsky.uploader.google.drive.GDriveProvider
+import com.ziemsky.uploader.model.local.LocalFile
 import mu.KotlinLogging
 import org.springframework.boot.context.ApplicationPidFileWriter
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -38,15 +39,13 @@ class UploaderConfig {
 
     // file polling endpoint
     //          |
-    //  FILES_QUEUE_CHANNEL
+    //  RAW_FILES_INCOMING_CHANNEL
     //          |
-    //      aggregator
+    //     transformer
     //          |
-    // BATCH_QUEUE_CHANNEL
+    // LOCAL_FILES_TO_SECURE_CHANNEL
     //          |
-    // uploader activator
-    //          |
-    //      uploader
+    //       securer -> GDriveClient
 
     @Bean
     internal fun inboundFileReaderEndpoint(config: UploaderConfigProperties, env: Environment): IntegrationFlow {
@@ -56,51 +55,45 @@ class UploaderConfig {
         log.info("                               Config: {}", config)
         log.info("Monitoring folder for files to upload: {}", config.monitoring().path())
 
-        return IntegrationFlows.from(
-                Files.inboundAdapter(
-                        // todo switch from polling to watch service? See docs for caveats!:
-                        // https://docs.spring.io/spring-integration/reference/html/files.html#watch-service-directory-scanner
-                        config.monitoring().path().toFile(),
-                        Comparator.comparing<File, String>(
-                                { it.name },
-                                { leftFileName, rightFileName -> -1 * leftFileName.compareTo(rightFileName) }
-                        ))
-                        .patternFilter("*.jpg")
-        )
-                .channel(FILES_INCOMING_CHANNEL)
+        return IntegrationFlows
+                .from(
+                        Files.inboundAdapter(
+                                // todo switch from polling to watch service? See docs for caveats!:
+                                // https://docs.spring.io/spring-integration/reference/html/files.html#watch-service-directory-scanner
+                                config.monitoring().path().toFile(),
+                                Comparator.comparing<File, String>(
+                                        { it.name },
+                                        { leftFileName, rightFileName -> -1 * leftFileName.compareTo(rightFileName) }
+                                ))
+                                .patternFilter("*.jpg")
+                )
+                .channel(RAW_FILES_INCOMING_CHANNEL)
                 .get()
     }
 
     @Bean
-    internal fun filesBatchAggregator(): IntegrationFlow {
+    internal fun transformer(securer: Securer): IntegrationFlow {
         return IntegrationFlows
-                .from(FILES_INCOMING_CHANNEL)
-                .aggregate { aggregatorSpec ->
-                    aggregatorSpec
-                            .correlationStrategy { message -> true }
-                            .releaseStrategy { group -> group.size() == BATCH_SIZE }
-                            .groupTimeout(1000)
-                            .sendPartialResultOnExpiry(true)
-                            .expireGroupsUponCompletion(true)
-                }
-                .channel(FILES_BATCHED_TO_SECURE_CHANNEL)
+                .from(RAW_FILES_INCOMING_CHANNEL)
+                .transform(File::class.java, ::LocalFile)
+                .channel(LOCAL_FILES_TO_SECURE_CHANNEL)
                 .get()
     }
 
     @Bean
-    internal fun outboundFileUploaderEndpoint(securerService: SecurerService): IntegrationFlow {
+    internal fun outboundFileUploaderEndpoint(securer: Securer): IntegrationFlow {
         return IntegrationFlows
-                .from(FILES_BATCHED_TO_SECURE_CHANNEL)
-                .handle<List<File>> { payload, headers ->
-                    securerService.secure(payload)
-                    null
+                .from(LOCAL_FILES_TO_SECURE_CHANNEL)
+                .handle<LocalFile> { payload, _ ->
+                    securer.secure(payload)
+                    payload
                 }
                 .get()
     }
 
     @Bean
-    internal fun securerService(fileRepository: FileRepository): SecurerService {
-        return SecurerService(fileRepository)
+    internal fun securerService(fileRepository: FileRepository): Securer {
+        return Securer(fileRepository)
     }
 
     @Bean
@@ -144,8 +137,8 @@ class UploaderConfig {
 
         private val BATCH_SIZE = 4
 
-        private val FILES_INCOMING_CHANNEL = "incomingFilesChannel"
-        private val FILES_BATCHED_TO_SECURE_CHANNEL = "filesBatchedToSecureChannel"
+        private val RAW_FILES_INCOMING_CHANNEL = "incomingFilesChannel"
+        private val LOCAL_FILES_TO_SECURE_CHANNEL = "localFilesToSecureChannel"
         private val POLLING_INTERVAL_IN_MILLIS = 100
     }
 }

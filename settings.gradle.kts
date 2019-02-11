@@ -1,7 +1,7 @@
 rootProject.name = "uploader"
 
 val pluginVersionsByIds = mapOf(
-        "org.springframework.boot" to "2.1.1.RELEASE",
+        "org.springframework.boot" to "2.1.3.RELEASE",
         "io.spring.dependency-management" to "1.0.6.RELEASE",
         "com.github.johnrengelman.processes" to "0.5.0",
         "com.dorongold.task-tree" to "1.3.1",

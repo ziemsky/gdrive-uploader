@@ -50,6 +50,7 @@ subprojects {
                 entry("spring-web")
                 entry("spring-test")
                 entry("spring-context")
+                entry("spring-integration")
             }
 
             dependency("io.github.microutils:kotlin-logging:1.6.23")

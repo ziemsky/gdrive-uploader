@@ -1,12 +1,13 @@
 package com.ziemsky.uploader
 
-import java.io.File
+import com.ziemsky.uploader.model.local.LocalFile
+import com.ziemsky.uploader.model.repo.RepoFolder
 
-class SecurerService(val fileRepository: FileRepository) {
+class Securer(val fileRepository: FileRepository) {
 
-    fun secure(files: List<File>) {
+    fun secure(localFile: LocalFile) {
 
-        fileRepository.upload(files)
+        fileRepository.upload(RepoFolder.from(localFile.date), localFile)
     }
 
 

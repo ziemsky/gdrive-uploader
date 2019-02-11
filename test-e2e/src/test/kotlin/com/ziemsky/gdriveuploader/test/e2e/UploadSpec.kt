@@ -2,7 +2,7 @@ package com.ziemsky.gdriveuploader.test.e2e
 
 import com.ziemsky.fsstructure.FsStructure.*
 import com.ziemsky.gdriveuploader.test.e2e.config.E2ETestConfig
-import com.ziemsky.gdriveuploader.test.shared.data.TestFixtureService
+import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
 import io.kotlintest.eventually
 import io.kotlintest.seconds
 import io.kotlintest.shouldBe
@@ -14,11 +14,11 @@ import org.springframework.test.context.ContextConfiguration
  * most critical functionality, leaving testing edge cases to cheaper integration and unit tests.
  */
 @ContextConfiguration(classes = [(E2ETestConfig::class)])
-class UploadSpec(testFixtureService: TestFixtureService) : BehaviorSpec({
+class UploadSpec(testFixtures: TestFixtures) : BehaviorSpec({
 
     given("some remote content and some files in the source dir") {
         // todo elaborate description
-        testFixtureService.remoteStructureDelete()
+        testFixtures.remoteStructureDelete()
 
         // enough existing daily folders to trigger rotation of the oldest
         val remoteContentOriginal = create(
@@ -46,7 +46,7 @@ class UploadSpec(testFixtureService: TestFixtureService) : BehaviorSpec({
                         )
                 )
         )
-        testFixtureService.remoteStructureCreateFrom(remoteContentOriginal)
+        testFixtures.remoteStructureCreateFrom(remoteContentOriginal)
 
         // A set of files:
         // - scattered across few, non-consecutive dates,
@@ -76,7 +76,7 @@ class UploadSpec(testFixtureService: TestFixtureService) : BehaviorSpec({
 
         `when`("files appear in the monitored location") {
 
-            testFixtureService.localStructureCreateFrom(localContentToUpload)
+            testFixtures.localStructureCreateFrom(localContentToUpload)
 
             then("it uploads all local files and rotates the remote ones") {
 
@@ -123,7 +123,7 @@ class UploadSpec(testFixtureService: TestFixtureService) : BehaviorSpec({
                 )
 
                 eventually(120.seconds) {
-                    testFixtureService.remoteStructure() shouldBe remoteContentExpected
+                    testFixtures.remoteStructure() shouldBe remoteContentExpected
                 }
             }
         }
