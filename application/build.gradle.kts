@@ -1,11 +1,7 @@
 import com.github.jengelman.gradle.plugins.processes.tasks.JavaFork
 import org.awaitility.kotlin.await
-import org.jetbrains.kotlin.daemon.KotlinCompileDaemon.log
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
-import org.springframework.boot.gradle.tasks.run.BootRun
-
-import java.util.concurrent.TimeUnit.*
+import java.util.concurrent.TimeUnit.SECONDS
 
 
 buildscript {
@@ -49,7 +45,10 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    testImplementation("io.kotlintest:kotlintest-runner-junit5")
+    testImplementation("io.kotlintest:kotlintest-runner-junit5") {
+        // to prevent io.kotlintest import older kotlin-stdlib-common
+        exclude(group = "org.jetbrains.kotlin")
+    }
 
     testImplementation("io.mockk:mockk")
 }

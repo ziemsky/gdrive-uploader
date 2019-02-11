@@ -13,8 +13,14 @@ dependencies {
 
     testImplementation(files("../lib/fs-structure-0.1.0-SNAPSHOT.jar"))
 
-    testImplementation("io.kotlintest:kotlintest-runner-junit5")
-    testImplementation("io.kotlintest:kotlintest-extensions-spring")
+    testImplementation("io.kotlintest:kotlintest-runner-junit5") {
+        // to prevent io.kotlintest import older kotlin-stdlib-common
+        exclude(group = "org.jetbrains.kotlin")
+    }
+    testImplementation("io.kotlintest:kotlintest-extensions-spring") {
+        // to prevent io.kotlintest import older kotlin-stdlib-common
+        exclude(group = "org.jetbrains.kotlin")
+    }
 
     testImplementation("com.typesafe:config")
 

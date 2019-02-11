@@ -8,10 +8,13 @@ dependencies {
     testImplementation(files("../lib/fs-structure-0.1.0-SNAPSHOT.jar"))
 
     testImplementation("io.kotlintest:kotlintest-runner-junit5") {
+        // to prevent io.kotlintest import older kotlin-stdlib-common
         exclude(group = "org.jetbrains.kotlin")
     }
-
-    testImplementation("io.kotlintest:kotlintest-extensions-spring")
+    testImplementation("io.kotlintest:kotlintest-extensions-spring"){
+        // to prevent io.kotlintest import older kotlin-stdlib-common
+        exclude(group = "org.jetbrains.kotlin")
+    }
 
     testImplementation("org.springframework:spring-test")
     testImplementation("org.springframework:spring-web")
@@ -29,6 +32,8 @@ dependencies {
 
     // Google Drive client
     testImplementation("com.google.apis:google-api-services-drive")
+
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 val testContentDir = createTempDir("uploader-e2e-test_", ".tmp")

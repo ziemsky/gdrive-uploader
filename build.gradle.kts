@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.gradle.api.tasks.testing.Test
 
 plugins {
     java
@@ -41,7 +40,7 @@ subprojects {
         // sub-projects rather than here.
 
         dependencies {
-            dependencySet("org.jetbrains.kotlin:1.3.11") {
+            dependencySet("org.jetbrains.kotlin:1.3.21") { // todo tie to the one in settings file
                 entry("kotlin-stdlib-jdk8")
                 entry("kotlin-stdlib")
                 entry("kotlin-reflect")
@@ -53,7 +52,7 @@ subprojects {
                 entry("spring-context")
             }
 
-            dependency("io.github.microutils:kotlin-logging:1.6.22")
+            dependency("io.github.microutils:kotlin-logging:1.6.23")
 
             dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
             dependency("com.typesafe:config:1.3.3")
@@ -63,12 +62,12 @@ subprojects {
             dependency("com.google.apis:google-api-services-drive:v3-rev20181101-$gDriveVersion")
             dependency("com.google.api-client:google-api-client:$gDriveVersion")
 
-            dependencySet("io.kotlintest:3.1.11") {
+            dependencySet("io.kotlintest:3.2.1") {
                 entry("kotlintest-runner-junit5")
                 entry("kotlintest-extensions-spring")
             }
 
-            dependency("io.mockk:mockk:1.8.13")
+            dependency("io.mockk:mockk:1.9")
 
             dependency("com.fasterxml.jackson.core:jackson-databind:2.9.8")
 
