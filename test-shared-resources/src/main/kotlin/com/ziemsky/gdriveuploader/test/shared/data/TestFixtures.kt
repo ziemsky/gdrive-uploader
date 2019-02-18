@@ -85,7 +85,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                                 }
 
                                 override fun onSuccess(file: Void?, responseHeaders: HttpHeaders) {
-                                    log.debug("Deleted {} {}: '{}'", itemType(), it.id, it.name)
+                                    log.info("Deleted {} {}: '{}'", itemType(), it.id, it.name)
                                 }
 
                                 override fun onFailure(e: GoogleJsonError, responseHeaders: HttpHeaders) {
@@ -105,7 +105,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         remoteContent?.walk(
                 { dirItem ->
 
-                    log.debug { "Creating remote ${dirItem}" }
+                    log.info { "Creating remote ${dirItem}" }
 
                     var dir = com.google.api.services.drive.model.File()
                     dir.setName(dirItem.name())
@@ -121,7 +121,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                     parents.put(dirItem, dir)
                 },
                 { fileItem ->
-                    log.debug { "Creating remote ${fileItem}" }
+                    log.info { "Creating remote ${fileItem}" }
 
 
                     val file = com.google.api.services.drive.model.File()
@@ -150,6 +150,10 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         tempDirectory.toFile().delete()
     }
 
+    fun localMonitoredDirEmpty(): Boolean {
+        return testDirectory.toFile().listFiles().isEmpty()
+    }
+
     fun cleanupLocalTestDir() { // todo remove, cleanup delegated to Gradle task
 
         val testDir = testDirectory.toFile()
@@ -167,7 +171,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                 .maxDepth(1)
                 .filterNot { it == dir }
                 .forEach {
-                    log.debug { "Deleting local item: $it" }
+                    log.info { "Deleting local item: $it" }
                     it.deleteRecursively()
                 }
     }
@@ -178,8 +182,9 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                 .maxDepth(1)
                 .filterNot { it.toPath() == srcDir }
                 .forEach {
-                    log.debug { "Moving local item: $it" }
-                    Files.move(it.toPath(), Paths.get(destDir.toString(), it.toPath().fileName.toString()))
+                    val targetPath = Paths.get(destDir.toString(), it.toPath().fileName.toString())
+                    log.info { "Moving local item: $it to $targetPath" }
+                    Files.move(it.toPath(), targetPath)
                 }
     }
 
@@ -217,5 +222,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         return outputStream.toByteArray()
     }
 
-
+    fun localStructure(): FsStructure {
+        return FsStructure.readFrom(testDirectory)
+    }
 }

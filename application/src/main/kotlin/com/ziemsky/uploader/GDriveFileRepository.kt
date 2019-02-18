@@ -43,12 +43,12 @@ class GDriveFileRepository(val drive: Drive) : FileRepository {
         // drive.files().create(gDriveFile, content)
     }
 
-    override fun folderWithNameAbsent(folderName: RepoFolderName): Boolean {
+    private fun folderWithNameAbsent(folderName: RepoFolderName): Boolean {
         return findFolderByName(folderName) == null
     }
 
-    override fun createFolderWithName(repoFolderName: RepoFolderName) {
-        log.info("Folder $repoFolderName not found; creating.")
+    private fun createFolderWithName(repoFolderName: RepoFolderName) {
+        log.debug("Folder $repoFolderName not found; creating.")
 
         val dir = com.google.api.services.drive.model.File()
         dir.name = repoFolderName.toString()

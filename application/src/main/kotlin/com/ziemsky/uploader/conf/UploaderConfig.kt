@@ -3,6 +3,7 @@ package com.ziemsky.uploader.conf
 import com.google.api.services.drive.Drive
 import com.ziemsky.uploader.FileRepository
 import com.ziemsky.uploader.GDriveFileRepository
+import com.ziemsky.uploader.Janitor
 import com.ziemsky.uploader.Securer
 import com.ziemsky.uploader.google.drive.GDriveProvider
 import com.ziemsky.uploader.model.local.LocalFile
@@ -23,6 +24,7 @@ import org.springframework.integration.dsl.Pollers.fixedDelay
 import org.springframework.integration.file.dsl.Files
 import org.springframework.integration.scheduling.PollerMetadata
 import java.io.File
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -47,9 +49,33 @@ class UploaderConfig {
     //          |
     //       securer -> GDriveClient
 
+
+//    @Bean
+//    fun uploaderConfigProperties(
+//            @Value("\${conf.path}/application.conf") configFilePath: Path,
+//            @Value("\${conf.path}") confPath: String
+//    ): UploaderConfigProperties {
+//
+//        val config = ConfigFactory
+//                .parseFile(configFilePath.toFile())
+//                .resolveWith(
+//                        ConfigFactory.parseMap(
+//                                hashMapOf("CONF_PATH" to confPath),
+//                                "env vars"
+//                        )
+//                )
+//
+//        val testProperties = ConfigBeanFactory.create(config, MutableUploaderConfigProperties::class.java)
+//
+//        log.info { "$javaClass: $testProperties" }
+//
+//        return testProperties
+//    }
+
     @Bean
     internal fun inboundFileReaderEndpoint(config: UploaderConfigProperties, env: Environment): IntegrationFlow {
 
+        log.info("                          current dir: {}", Paths.get(".").toAbsolutePath())
         log.info("    spring.config.additional-location: {}", env.getProperty("spring.config.additional-location"))
         log.info("               spring.config.location: {}", env.getProperty("spring.config.location"))
         log.info("                               Config: {}", config)
@@ -72,7 +98,7 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun transformer(securer: Securer): IntegrationFlow {
+    internal fun transformer(): IntegrationFlow {
         return IntegrationFlows
                 .from(RAW_FILES_INCOMING_CHANNEL)
                 .transform(File::class.java, ::LocalFile)
@@ -88,7 +114,18 @@ class UploaderConfig {
                     securer.secure(payload)
                     payload
                 }
+                .channel(SECURED_FILES_CHANNEL)
                 .get()
+    }
+
+    @Bean
+    internal fun janitorEndpoint(janitor: Janitor): IntegrationFlow {
+        return IntegrationFlows
+                .from(SECURED_FILES_CHANNEL)
+                .handle<LocalFile> { payload, _ ->
+                    janitor.cleanupSecuredFile(payload)
+                }
+                .nullChannel()
     }
 
     @Bean
@@ -98,6 +135,9 @@ class UploaderConfig {
 
     @Bean
     internal fun drive(config: UploaderConfigProperties): Drive {
+
+        log.debug { "CURRENT DIR FROM UPLOADER CONFIG: ${Paths.get(".").toAbsolutePath()}" }
+
         return GDriveProvider(
                 config.google().drive().applicationUserName(),
                 config.google().drive().tokensDirectory(),
@@ -108,8 +148,12 @@ class UploaderConfig {
 
     @Bean
     internal fun repository(drive: Drive): FileRepository {
-
         return GDriveFileRepository(drive)
+    }
+
+    @Bean
+    internal fun janitor(): Janitor {
+        return Janitor()
     }
 
     @Bean
@@ -139,6 +183,7 @@ class UploaderConfig {
 
         private val RAW_FILES_INCOMING_CHANNEL = "incomingFilesChannel"
         private val LOCAL_FILES_TO_SECURE_CHANNEL = "localFilesToSecureChannel"
+        private val SECURED_FILES_CHANNEL = "securedFilesChannel"
         private val POLLING_INTERVAL_IN_MILLIS = 100
     }
 }

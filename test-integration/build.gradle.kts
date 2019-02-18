@@ -32,6 +32,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging") {
         exclude(group = "org.jetbrains.kotlin")
     }
+    implementation("ch.qos.logback:logback-classic")
 
     testRuntime("com.fasterxml.jackson.core:jackson-databind")
     implementation(kotlin("stdlib-jdk8"))
@@ -39,6 +40,8 @@ dependencies {
 
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
+
+    systemProperty("conf.path", rootProject.properties["conf.path"] ?: throw MissingConfValueException("conf.path"))
 }
 repositories {
     mavenCentral()
@@ -51,3 +54,5 @@ val compileTestKotlin: KotlinCompile by tasks
 compileTestKotlin.kotlinOptions {
     jvmTarget = "1.8"
 }
+
+class MissingConfValueException(message: String) : Throwable("Missing configuration value: $message")

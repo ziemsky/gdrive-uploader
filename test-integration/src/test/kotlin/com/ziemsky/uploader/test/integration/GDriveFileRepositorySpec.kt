@@ -89,6 +89,8 @@ class GDriveFileRepositorySpec(val drive: Drive,
         }
 
 
+        // todo test for caching of remote folders on start
+
         // todo for exception-handling cases, extend Drive (it's not final), intercept selected calls to emulate exceptions to test passing of those out of the repo class
     }
 }

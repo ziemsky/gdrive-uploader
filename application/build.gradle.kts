@@ -32,7 +32,11 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging") {
         exclude(group = "org.jetbrains.kotlin")
     }
+    implementation("ch.qos.logback:logback-classic")
+
     implementation("com.github.ladutsko:spring-boot-starter-hocon")
+
+//    implementation("com.typesafe:config")
 
     implementation("org.hibernate.validator:hibernate-validator")
 

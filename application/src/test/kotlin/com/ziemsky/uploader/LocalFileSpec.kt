@@ -44,4 +44,6 @@ class LocalFileSpec : BehaviorSpec({
             }
         }
     }
+
+//     todo error when file is a dir?
 })

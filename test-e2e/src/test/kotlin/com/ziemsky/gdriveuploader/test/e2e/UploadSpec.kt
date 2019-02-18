@@ -3,131 +3,176 @@ package com.ziemsky.gdriveuploader.test.e2e
 import com.ziemsky.fsstructure.FsStructure.*
 import com.ziemsky.gdriveuploader.test.e2e.config.E2ETestConfig
 import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
+import com.ziemsky.uploader.main
+import io.kotlintest.Spec
 import io.kotlintest.eventually
-import io.kotlintest.seconds
+import io.kotlintest.minutes
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.BehaviorSpec
+import mu.KotlinLogging
+import org.opentest4j.AssertionFailedError
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.test.context.ContextConfiguration
+import java.io.UncheckedIOException
+import java.nio.file.Paths
+
+private val log = KotlinLogging.logger {}
 
 /**
  * Main end-to-end test ensuring that all layers integrate together, exercising only core,
  * most critical functionality, leaving testing edge cases to cheaper integration and unit tests.
  */
 @ContextConfiguration(classes = [(E2ETestConfig::class)])
-class UploadSpec(testFixtures: TestFixtures) : BehaviorSpec({
+//        // TODO this is now integration test (albeit integrating all layers, rather than just two as the rest of the
+//        //  integration tests in this module), focused on testing that Spring Integration flow is built correctly so
+//        //  move it to test-integration.
+//        //  test-e2e to be used again once building of Docker image gets introduced. At this point,
+//        //  a copy of GDrive client will need to be placed in buildSrc so that it's available to the build script
+//        //  to setup state in GDrive ahead of the test task.
+class UploadSpec(
+        @Value("\${conf.path}") private val confPath: String,
+        @Value("\${test.e2e.uploader.monitoring.path}") private val monitoringPath: String,
+        testFixtures: TestFixtures
+) : BehaviorSpec() {
 
-    given("some remote content and some files in the source dir") {
-        // todo elaborate description
-        testFixtures.remoteStructureDelete()
+    override fun beforeSpec(spec: Spec) {
+        // todo custom Spring Boot Hocon Property Source Starter so that placeholdres can be used in applicatin.conf?
+        //  One to:
+        //  a) support env vars resolution (ladutsko's doesn't call Config.resolve)
+        //  b) support Config.resolveWith(custom config)?
+        System.setProperty("uploader.google.drive.tokensDirectory", Paths.get(confPath, "google/gdrive/secrets/tokens").toAbsolutePath().toString())
+        System.setProperty("uploader.google.drive.credentialsFile", Paths.get(confPath, "google/gdrive/secrets/credentials.json").toAbsolutePath().toString())
+        System.setProperty("uploader.monitoring.path", monitoringPath)
+    }
 
-        // enough existing daily folders to trigger rotation of the oldest
-        val remoteContentOriginal = create(
+    private fun startApplication() {
+        main(arrayOf("--spring.config.additional-location=$confPath/application.conf"))
+    }
 
-                // matching content
-                dir("2018-09-01",
-                        fle("20180901120000-00-front.jpg")
-                ),
-                dir("2018-09-02",
-                        fle("20180902120000-00-front.jpg")
-                ),
-                dir("2018-09-03",
-                        fle("20180903120000-00-front.jpg")
-                ),
+    init {
+        given("some remote content and some files in the source dir") {
 
-                // not matching, ignored, remote content to be retained post-rotaion
-                fle("not matching, top level file"),
-                dir("not matching, top-level dir, empty"),
-                dir("not matching, top-level dir, with content",
-                        fle("20180904120000-00-front.jpg"), // matching, nested file
-                        dir("2018-09-03"), // matching, nested folder
-                        dir("not matching, nested dir, empty"),
-                        dir("not matching, nested dir, with content",
-                                fle("not matching, nested file")
-                        )
-                )
-        )
-        testFixtures.remoteStructureCreateFrom(remoteContentOriginal)
+            // todo elaborate description
+            testFixtures.remoteStructureDelete()
+            testFixtures.cleanupLocalTestDir() // todo consistent clenup methods' naming
 
-        // A set of files:
-        // - scattered across few, non-consecutive dates,
-        // - enough to trigger rotation of the oldest
+            // enough existing daily folders to trigger rotation of the oldest
+            val remoteContentOriginal = create(
 
-        val localContentToUpload = create(
-                // 2018-09-08
-                fle("20180908120000-00-front.jpg"),
-                fle("20180908120000-01-front.jpg"),
-                fle("20180908120000-02-front.jpg"),
-                fle("20180908120000-03-front.jpg"),
-                // 2018-09-09
-                fle("20180909120000-00-front.jpg"),
-                fle("20180909120000-01-front.jpg"),
-                fle("20180909120000-02-front.jpg"),
-                fle("20180909120000-03-front.jpg"),
-                fle("20180909120000-04-front.jpg"),
-                // 2018-09-11
-                fle("20180911120000-00-front.jpg"),
-                fle("20180911120000-01-front.jpg"),
-                fle("20180911120000-02-front.jpg"),
-                fle("20180911120000-03-front.jpg"),
-                fle("20180911120000-04-front.jpg"),
-                fle("20180911120000-05-front.jpg")
-        )
+                    // matching content
+                    dir("2018-09-01",
+                            fle("20180901120000-00-front.jpg")
+                    ),
+                    dir("2018-09-02",
+                            fle("20180902120000-00-front.jpg")
+                    ),
+                    dir("2018-09-03",
+                            fle("20180903120000-00-front.jpg")
+                    ),
 
+                    // not matching, ignored, remote content to be retained post-rotaion
+                    fle("not matching, top level file"),
+                    dir("not matching, top-level dir, empty"),
+                    dir("not matching, top-level dir, with content",
+                            fle("20180904120000-00-front.jpg"), // matching, nested file
+                            dir("2018-09-03"), // matching, nested folder
+                            dir("not matching, nested dir, empty"),
+                            dir("not matching, nested dir, with content",
+                                    fle("not matching, nested file")
+                            )
+                    )
+            )
+            testFixtures.remoteStructureCreateFrom(remoteContentOriginal)
 
-        `when`("files appear in the monitored location") {
+            // A set of files:
+            // - scattered across few, non-consecutive dates,
+            // - enough to trigger rotation of the oldest
 
-            testFixtures.localStructureCreateFrom(localContentToUpload)
+            val localContentToUpload = create(
+                    // 2018-09-08
+                    fle("20180908120000-00-front.jpg"),
+                    fle("20180908120000-01-front.jpg"),
+                    fle("20180908120000-02-front.jpg"),
+                    fle("20180908120000-03-front.jpg"),
+                    // 2018-09-09
+                    fle("20180909120000-00-front.jpg"),
+                    fle("20180909120000-01-front.jpg"),
+                    fle("20180909120000-02-front.jpg"),
+                    fle("20180909120000-03-front.jpg"),
+                    fle("20180909120000-04-front.jpg"),
+                    // 2018-09-11
+                    fle("20180911120000-00-front.jpg"),
+                    fle("20180911120000-01-front.jpg"),
+                    fle("20180911120000-02-front.jpg"),
+                    fle("20180911120000-03-front.jpg"),
+                    fle("20180911120000-04-front.jpg"),
+                    fle("20180911120000-05-front.jpg")
+            )
 
-            then("it uploads all local files and rotates the remote ones") {
+            startApplication()
 
-                // mix of freshly uploaded files and the remote rotation survivors
-                val remoteContentExpected = create(
+            `when`("files appear in the monitored location") {
 
-                        // actual content, result of the newly uploaded files and the remote survivors of the rotation
-                        dir("2018-09-03",
-                                fle("20180903120000-00-front.jpg")
-                        ),
-                        dir("2018-09-08",
-                                fle("20180908120000-00-front.jpg"),
-                                fle("20180908120000-01-front.jpg"),
-                                fle("20180908120000-02-front.jpg"),
-                                fle("20180908120000-03-front.jpg")
-                        ),
-                        dir("2018-09-09",
-                                fle("20180909120000-00-front.jpg"),
-                                fle("20180909120000-01-front.jpg"),
-                                fle("20180909120000-02-front.jpg"),
-                                fle("20180909120000-03-front.jpg"),
-                                fle("20180909120000-04-front.jpg")
-                        ),
-                        dir("2018-09-11",
-                                fle("20180911120000-00-front.jpg"),
-                                fle("20180911120000-01-front.jpg"),
-                                fle("20180911120000-02-front.jpg"),
-                                fle("20180911120000-03-front.jpg"),
-                                fle("20180911120000-04-front.jpg"),
-                                fle("20180911120000-05-front.jpg")
-                        ),
+                testFixtures.localStructureCreateFrom(localContentToUpload)
+                log.debug { "Created Local Structure" }
 
-                        // not matching, ignored, remote content to be retained post-rotaion
-                        fle("not matching, top level file"),
-                        dir("not matching, top-level dir, empty"),
-                        dir("not matching, top-level dir, with content",
-                                fle("20180904120000-00-front.jpg"), // matching, nested file
-                                dir("2018-09-03"), // matching, nested folder
-                                dir("not matching, nested dir, empty"),
-                                dir("not matching, nested dir, with content",
-                                        fle("not matching, nested file")
-                                )
-                        )
-                )
+                then("""it uploads all local files
+                   |and rotates the remote ones
+                   |and deletes local original files""".trimMargin()) {
 
-                eventually(120.seconds) {
-                    testFixtures.remoteStructure() shouldBe remoteContentExpected
+                    // mix of freshly uploaded files and the remote rotation survivors
+                    val remoteContentExpected = create(
+
+                            // actual content, result of the newly uploaded files and the remote survivors of the rotation
+                            dir("2018-09-03",
+                                    fle("20180903120000-00-front.jpg")
+                            ),
+                            dir("2018-09-08",
+                                    fle("20180908120000-00-front.jpg"),
+                                    fle("20180908120000-01-front.jpg"),
+                                    fle("20180908120000-02-front.jpg"),
+                                    fle("20180908120000-03-front.jpg")
+                            ),
+                            dir("2018-09-09",
+                                    fle("20180909120000-00-front.jpg"),
+                                    fle("20180909120000-01-front.jpg"),
+                                    fle("20180909120000-02-front.jpg"),
+                                    fle("20180909120000-03-front.jpg"),
+                                    fle("20180909120000-04-front.jpg")
+                            ),
+                            dir("2018-09-11",
+                                    fle("20180911120000-00-front.jpg"),
+                                    fle("20180911120000-01-front.jpg"),
+                                    fle("20180911120000-02-front.jpg"),
+                                    fle("20180911120000-03-front.jpg"),
+                                    fle("20180911120000-04-front.jpg"),
+                                    fle("20180911120000-05-front.jpg")
+                            ),
+
+                            // not matching, ignored, remote content to be retained post-rotaion
+                            fle("not matching, top level file"),
+                            dir("not matching, top-level dir, empty"),
+                            dir("not matching, top-level dir, with content",
+                                    fle("20180904120000-00-front.jpg"), // matching, nested file
+                                    dir("2018-09-03"), // matching, nested folder
+                                    dir("not matching, nested dir, empty"),
+                                    dir("not matching, nested dir, with content",
+                                            fle("not matching, nested file")
+                                    )
+                            )
+                    )
+
+                    val empty = create()
+
+                    eventually(2.minutes, UncheckedIOException::class.java) {
+                        eventually(2.minutes, AssertionFailedError::class.java) {
+                            //                    log.debug { "Verifying" }
+                            testFixtures.localStructure() shouldBe empty // todo FsStructure.EMPTY
+                            testFixtures.remoteStructure() shouldBe remoteContentExpected
+                        }
+                    }
                 }
             }
         }
     }
-
-
-})
+}

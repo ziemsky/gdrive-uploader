@@ -1,6 +1,12 @@
-.gradle
-build/
+### Gradle ###
 !gradle/wrapper/gradle-wrapper.jar
+.gradle
+
+
+### Build ###
+build/
+!/buildSrc/src/main/**/build/
+.kotlintest
 
 ### STS ###
 .apt_generated

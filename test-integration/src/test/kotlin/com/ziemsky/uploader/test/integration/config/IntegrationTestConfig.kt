@@ -20,9 +20,18 @@ class IntegrationTestConfig {
 
     @Bean
     fun testProperties(
-            @Value("../config/\${uploader.run.environment:local}/test-integration.conf") configFilePath: Path
+            @Value("\${conf.path}/test-integration.conf") configFilePath: Path,
+            @Value("\${conf.path}") confPath: String
     ): TestProperties {
-        val config = ConfigFactory.parseFile(configFilePath.toFile())
+
+        val config = ConfigFactory
+                .parseFile(configFilePath.toFile())
+                .resolveWith(
+                        ConfigFactory.parseMap(
+                                hashMapOf("CONF_PATH" to confPath),
+                                "env vars"
+                        )
+                )
 
         val testProperties = ConfigBeanFactory.create(config, MutableTestProperties::class.java)
 

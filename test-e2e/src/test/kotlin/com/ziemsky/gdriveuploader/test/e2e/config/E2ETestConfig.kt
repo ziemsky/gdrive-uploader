@@ -17,9 +17,18 @@ class E2ETestConfig {
 
     @Bean
     fun testProperties(
-            @Value("../config/\${uploader.run.environment:local}/test-e2e.conf") configFilePath: Path
+            @Value("\${conf.path}/test-e2e.conf") configFilePath: Path,
+            @Value("\${conf.path}") confPath: String
     ): TestProperties {
-        val config = ConfigFactory.parseFile(configFilePath.toFile())
+        // todo cleanup, remove duplication with IntegrationTestConfig
+        val config = ConfigFactory
+                .parseFile(configFilePath.toFile())
+                .resolveWith(
+                        ConfigFactory.parseMap(
+                                hashMapOf("CONF_PATH" to confPath),
+                                "env vars"
+                        )
+                )
 
         val testProperties = ConfigBeanFactory.create(config, MutableTestProperties::class.java)
 

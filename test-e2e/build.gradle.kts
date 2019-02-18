@@ -1,9 +1,16 @@
+
 plugins {
     kotlin("plugin.spring")
+
+    // Enables resolution of :application's dependencies
+    id("org.springframework.boot")
 }
 
 dependencies {
     testImplementation(project(":test-shared-resources"))
+
+    // Enables @SpringBootTest(classes = [UploaderConfig::class]) in UploadSpec
+    testImplementation(project(":application"))
 
     testImplementation(files("../lib/fs-structure-0.1.0-SNAPSHOT.jar"))
 
@@ -17,8 +24,7 @@ dependencies {
     }
 
     testImplementation("org.springframework:spring-test")
-    testImplementation("org.springframework:spring-web")
-    testImplementation("org.springframework:spring-context")
+    testImplementation("org.springframework.boot:spring-boot-test")
 
     testImplementation("org.awaitility:awaitility-kotlin") {
         exclude(group = "org.jetbrains.kotlin")
@@ -27,6 +33,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging") {
         exclude(group = "org.jetbrains.kotlin")
     }
+    implementation("ch.qos.logback:logback-classic")
 
     testImplementation("com.typesafe:config")
 
@@ -62,15 +69,17 @@ val test by tasks.getting(Test::class) {
 
     // set dynamic properties for the test code
     systemProperty("test.e2e.uploader.monitoring.path", testContentDir)
-
+    systemProperty("conf.path", rootProject.properties["conf.path"] ?: throw MissingConfValueException("conf.path"))
 
     dependsOn(
-            testContentSetUp.get(),
-            tasks.getByPath(":application:appStart")
+            testContentSetUp.get()
+            // tasks.getByPath(":application:appStart")
     )
 
     finalizedBy(
-            testContentTearDown.get(),
-            tasks.getByPath(":application:appStop")
+            testContentTearDown.get()
+            // tasks.getByPath(":application:appStop")
     )
 }
+
+class MissingConfValueException(message: String) : Throwable("Missing configuration value: $message")

@@ -13,6 +13,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging") {
         exclude(group = "org.jetbrains.kotlin")
     }
+    implementation("ch.qos.logback:logback-classic")
 
     // Google Drive client
     implementation("com.google.oauth-client:google-oauth-client-jetty")

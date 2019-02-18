@@ -24,7 +24,7 @@ class SecurerSpec : BehaviorSpec({
 
             service.secure(localFile)
 
-            then("all daily payloads in the batch of files gets secured in the repository in corresponding folders") {
+            then("file gets secured in the repository in corresponding folder") {
 
                 verify { fileRepository.upload(dailyFolder, localFile) }
             }

@@ -1,14 +1,16 @@
 rootProject.name = "uploader"
 
+val kotlinVersion = "1.3.21" // todo tie to the one in main build script
+
+val springBootVersion = "2.1.3.RELEASE" // todo tie to the one in gradle.properties
+
 val pluginVersionsByIds = mapOf(
-        "org.springframework.boot" to "2.1.3.RELEASE",
+        "org.springframework.boot" to springBootVersion,
         "io.spring.dependency-management" to "1.0.6.RELEASE",
         "com.github.johnrengelman.processes" to "0.5.0",
         "com.dorongold.task-tree" to "1.3.1",
         "com.github.ben-manes.versions" to "0.20.0"
 )
-
-val kotlinVersion = "1.3.21" // todo tie to the one in main build script
 
 val pluginVersionsByNamespaces = mapOf(
         "org.jetbrains.kotlin" to kotlinVersion,

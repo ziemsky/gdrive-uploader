@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.nio.file.Paths
 
 plugins {
     java
@@ -10,8 +11,18 @@ plugins {
 }
 
 // todo document uploader.run.environment in readme
+val defaultRunEnvironment = "local"
 if (!project.hasProperty("uploader.run.environment")) {
-    project.extra.set("uploader.run.environment", "local")
+    project.extra.set("uploader.run.environment", defaultRunEnvironment)
+}
+
+if (!project.hasProperty("conf.path")) {
+    val envSpecificConfDirPath = Paths.get(
+            project.projectDir.absolutePath,
+            "conf",
+            project.properties["uploader.run.environment"] as String
+    ).toString()
+    project.extra.set("conf.path", envSpecificConfDirPath)
 }
 
 allprojects {
@@ -20,6 +31,9 @@ allprojects {
 
 // defined in gradle.properties; done this way to support referencing from buildscript
 val awaitilityVersion: String by rootProject
+
+val springBootVersion: String by rootProject
+
 val gDriveVersion = "1.27.0"
 
 subprojects {
@@ -46,14 +60,17 @@ subprojects {
                 entry("kotlin-reflect")
             }
 
-            dependencySet("org.springframework:5.1.3.RELEASE") {
+            dependencySet("org.springframework:5.1.5.RELEASE") {
                 entry("spring-web")
                 entry("spring-test")
                 entry("spring-context")
                 entry("spring-integration")
             }
 
+            dependency("org.springframework.boot:spring-boot-test:$springBootVersion")
+
             dependency("io.github.microutils:kotlin-logging:1.6.23")
+            dependency("ch.qos.logback:logback-classic:1.2.3")
 
             dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
             dependency("com.typesafe:config:1.3.3")
