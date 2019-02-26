@@ -12,6 +12,10 @@ data class RepoFolderName private constructor(private val raw: String) {
         fun from(date: LocalDate): RepoFolderName {
             return RepoFolderName(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
         }
+
+        fun from(date: String): RepoFolderName {
+            return from(LocalDate.parse(date))
+        }
     }
 
 }
