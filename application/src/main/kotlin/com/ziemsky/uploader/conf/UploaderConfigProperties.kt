@@ -6,6 +6,7 @@ import org.springframework.validation.annotation.Validated
 import java.nio.file.Path
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
+import javax.validation.constraints.Positive
 
 interface UploaderConfigProperties {
     /**
@@ -13,11 +14,18 @@ interface UploaderConfigProperties {
      */
     fun monitoring(): Monitoring
 
+    fun rotation(): Rotation
+
     fun google(): Google
 }
 
 interface Monitoring {
     fun path(): Path
+}
+
+interface Rotation {
+    fun maxDailyFolders(): Int
+    fun cron(): String
 }
 
 interface Google {
@@ -47,10 +55,17 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
     val monitoring: MonitoringProperties = MonitoringProperties()
 
     @NestedConfigurationProperty
+    val rotation: RotationProperties = RotationProperties()
+
+    @NestedConfigurationProperty
     val google: GoogleProperties = GoogleProperties()
 
     override fun monitoring(): Monitoring {
         return monitoring
+    }
+
+    override fun rotation(): Rotation {
+        return rotation
     }
 
     override fun google(): Google {
@@ -58,8 +73,9 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
     }
 
     override fun toString(): String {
-        return "MutableUploaderConfigProperties(monitoring=$monitoring, google=$google)"
+        return "MutableUploaderConfigProperties(monitoring=$monitoring, rotation=$rotation, google=$google)"
     }
+
 
     class MonitoringProperties : Monitoring {
 
@@ -132,5 +148,24 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
 
     }
 
+    class RotationProperties: Rotation {
 
+        @Positive
+        var maxDailyFolders: Int = 5
+
+        @NotBlank
+        var cron: String = "0 1 */3 * * *"
+
+        override fun maxDailyFolders(): Int {
+            return maxDailyFolders
+        }
+
+        override fun cron(): String {
+            return cron
+        }
+
+        override fun toString(): String {
+            return "RotationProperties(maxDailyFolders=$maxDailyFolders, cron='$cron')"
+        }
+    }
 }

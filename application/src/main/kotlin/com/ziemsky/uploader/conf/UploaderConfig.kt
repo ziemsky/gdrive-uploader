@@ -1,12 +1,10 @@
 package com.ziemsky.uploader.conf
 
 import com.google.api.services.drive.Drive
-import com.ziemsky.uploader.FileRepository
-import com.ziemsky.uploader.GDriveFileRepository
-import com.ziemsky.uploader.Janitor
-import com.ziemsky.uploader.Securer
+import com.ziemsky.uploader.*
 import com.ziemsky.uploader.google.drive.GDriveProvider
 import com.ziemsky.uploader.model.local.LocalFile
+import com.ziemsky.uploader.model.repo.RepoFolderName
 import mu.KotlinLogging
 import org.springframework.boot.context.ApplicationPidFileWriter
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -15,6 +13,8 @@ import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.integration.annotation.IntegrationComponentScan
+import org.springframework.integration.annotation.MessagingGateway
 import org.springframework.integration.config.EnableIntegration
 import org.springframework.integration.dsl.IntegrationFlow
 import org.springframework.integration.dsl.IntegrationFlows
@@ -33,6 +33,7 @@ private val log = KotlinLogging.logger {}
 @Configuration
 @EnableIntegration
 @EnableConfigurationProperties(MutableUploaderConfigProperties::class)
+@IntegrationComponentScan
 class UploaderConfig {
 
     // todo make the cameras rename the files to jpg after upload
@@ -49,29 +50,6 @@ class UploaderConfig {
     //          |
     //       securer -> GDriveClient
 
-
-//    @Bean
-//    fun uploaderConfigProperties(
-//            @Value("\${conf.path}/application.conf") configFilePath: Path,
-//            @Value("\${conf.path}") confPath: String
-//    ): UploaderConfigProperties {
-//
-//        val config = ConfigFactory
-//                .parseFile(configFilePath.toFile())
-//                .resolveWith(
-//                        ConfigFactory.parseMap(
-//                                hashMapOf("CONF_PATH" to confPath),
-//                                "env vars"
-//                        )
-//                )
-//
-//        val testProperties = ConfigBeanFactory.create(config, MutableUploaderConfigProperties::class.java)
-//
-//        log.info { "$javaClass: $testProperties" }
-//
-//        return testProperties
-//    }
-
     @Bean
     internal fun inboundFileReaderEndpoint(config: UploaderConfigProperties, env: Environment): IntegrationFlow {
 
@@ -85,7 +63,7 @@ class UploaderConfig {
                 .from(
                         Files.inboundAdapter(
                                 // todo switch from polling to watch service? See docs for caveats!:
-                                // https://docs.spring.io/spring-integration/reference/html/files.html#watch-service-directory-scanner
+                                //  https://docs.spring.io/spring-integration/reference/html/#watch-service-directory-scanner
                                 config.monitoring().path().toFile(),
                                 Comparator.comparing<File, String>(
                                         { it.name },
@@ -98,39 +76,49 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun transformer(): IntegrationFlow {
-        return IntegrationFlows
-                .from(RAW_FILES_INCOMING_CHANNEL)
-                .transform(File::class.java, ::LocalFile)
-                .channel(LOCAL_FILES_TO_SECURE_CHANNEL)
-                .get()
-    }
+    internal fun transformer(): IntegrationFlow = IntegrationFlows
+            .from(RAW_FILES_INCOMING_CHANNEL)
+            .transform(File::class.java, ::LocalFile)
+            .channel(LOCAL_FILES_TO_SECURE_CHANNEL)
+            .get()
 
     @Bean
-    internal fun outboundFileUploaderEndpoint(securer: Securer): IntegrationFlow {
-        return IntegrationFlows
-                .from(LOCAL_FILES_TO_SECURE_CHANNEL)
-                .handle<LocalFile> { payload, _ ->
-                    securer.secure(payload)
-                    payload
-                }
-                .channel(SECURED_FILES_CHANNEL)
-                .get()
-    }
+    internal fun outboundFileUploaderEndpoint(securer: Securer): IntegrationFlow = IntegrationFlows
+            .from(LOCAL_FILES_TO_SECURE_CHANNEL)
+            .handle<LocalFile> { payload, _ ->
+                securer.secure(payload)
+                payload
+            }
+            .channel(SECURED_FILES_CHANNEL)
+            .get()
 
     @Bean
-    internal fun janitorEndpoint(janitor: Janitor): IntegrationFlow {
-        return IntegrationFlows
-                .from(SECURED_FILES_CHANNEL)
-                .handle<LocalFile> { payload, _ ->
-                    janitor.cleanupSecuredFile(payload)
-                }
-                .nullChannel()
-    }
+    internal fun janitorEndpoint(janitor: Janitor): IntegrationFlow = IntegrationFlows
+            .from(SECURED_FILES_CHANNEL)
+            .handle<LocalFile> { payload, _ ->
+                janitor.cleanupSecuredFile(payload)
+            }
+            .nullChannel()
 
     @Bean
-    internal fun securerService(fileRepository: FileRepository): Securer {
-        return Securer(fileRepository)
+    internal fun rotateRemoteDailyFolders(
+            janitor: Janitor,
+            config: UploaderConfigProperties
+    ): IntegrationFlow = IntegrationFlows
+            // .from(SecurerEventReporter::class.java) // todo note: didn't work; also: channels are beans
+            .from(REMOTE_DAILY_FOLDER_CREATED_CHANNEL)
+            .handle<RepoFolderName> { _, _ -> janitor.rotateRemoteDailyFolders() }
+            .nullChannel()
+
+    @MessagingGateway(defaultRequestChannel = REMOTE_DAILY_FOLDER_CREATED_CHANNEL)
+    interface SecurerEventReporterGateway : SecurerEventReporter
+
+    @Bean
+    internal fun securerService(
+            remoteRepository: RemoteRepository,
+            @Suppress("SpringJavaInjectionPointsAutowiringInspection") securerEventReporter: SecurerEventReporter
+    ): Securer {
+        return Securer(remoteRepository, securerEventReporter)
     }
 
     @Bean
@@ -147,13 +135,18 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun repository(drive: Drive): FileRepository {
-        return GDriveFileRepository(drive)
+    internal fun repository(drive: Drive): RemoteRepository {
+
+        val gDriveRemoteRepository = GDriveRemoteRepository(drive)
+
+        gDriveRemoteRepository.init()
+
+        return gDriveRemoteRepository
     }
 
     @Bean
-    internal fun janitor(): Janitor {
-        return Janitor()
+    internal fun janitor(remoteRepository: RemoteRepository, config: UploaderConfigProperties): Janitor {
+        return Janitor(remoteRepository, config.rotation().maxDailyFolders())
     }
 
     @Bean
@@ -184,6 +177,8 @@ class UploaderConfig {
         private val RAW_FILES_INCOMING_CHANNEL = "incomingFilesChannel"
         private val LOCAL_FILES_TO_SECURE_CHANNEL = "localFilesToSecureChannel"
         private val SECURED_FILES_CHANNEL = "securedFilesChannel"
+        private const val REMOTE_DAILY_FOLDER_CREATED_CHANNEL = "remoteDailyFolderCreatedChannel"
+
         private val POLLING_INTERVAL_IN_MILLIS = 100
     }
 }

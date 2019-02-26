@@ -2,12 +2,27 @@ package com.ziemsky.uploader
 
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
+import com.ziemsky.uploader.model.repo.RepoFolderName
 
-class Securer(val fileRepository: FileRepository) {
+class Securer(
+        private val remoteRepository: RemoteRepository,
+        private val securerEventReporter: SecurerEventReporter
+) {
 
     fun secure(localFile: LocalFile) {
 
-        fileRepository.upload(RepoFolder.from(localFile.date), localFile)
+        val dailyRepoFolderName = RepoFolderName.from(localFile.date)
+
+        var newRemoteDailyFolderCreated = false
+
+        if (remoteRepository.topLevelFolderWithNameAbsent(dailyRepoFolderName)) {
+            remoteRepository.createFolderWithName(dailyRepoFolderName)
+            newRemoteDailyFolderCreated = true
+        }
+
+        remoteRepository.upload(RepoFolder.from(localFile.date), localFile)
+
+        if (newRemoteDailyFolderCreated) securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyRepoFolderName)
     }
 
 

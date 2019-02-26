@@ -36,8 +36,6 @@ dependencies {
 
     implementation("com.github.ladutsko:spring-boot-starter-hocon")
 
-//    implementation("com.typesafe:config")
-
     implementation("org.hibernate.validator:hibernate-validator")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

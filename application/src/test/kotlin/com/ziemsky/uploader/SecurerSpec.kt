@@ -2,39 +2,80 @@ package com.ziemsky.uploader
 
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
+import io.kotlintest.IsolationMode
 import io.kotlintest.specs.BehaviorSpec
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.io.File
 
-class SecurerSpec : BehaviorSpec({
+class SecurerSpec : BehaviorSpec() {
+    override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    given("A file to secure") {
+    init {
 
-        val fileRepository: FileRepository = mockk(relaxed = true)
+        Given("A file to secure") {
 
-        val localFile = LocalFile(File("20180901120000-00-front.jpg"))
+            val remoteRepository: RemoteRepository = mockk(relaxed = true)
+            val securerEventReporter: SecurerEventReporter = mockk(relaxed = true)
 
-        val dailyFolder = RepoFolder.from(localFile.date)
+            val service = Securer(remoteRepository, securerEventReporter)
 
-        val service = Securer(fileRepository)
+            val localFile = LocalFile(File("20180901120000-00-front.jpg"))
+
+            val dailyFolder = RepoFolder.from(localFile.date)
 
 
-        `when`("securing file") {
+            And("remote daily folder existing for the day of the file") {
 
-            service.secure(localFile)
+                every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns false
 
-            then("file gets secured in the repository in corresponding folder") {
 
-                verify { fileRepository.upload(dailyFolder, localFile) }
+                When("securing file") {
+
+                    service.secure(localFile)
+
+                    Then("""file gets secured in the repository in corresponding folder
+                        |and no folder creation is attempted""".trimMargin()) {
+
+                        verify(exactly = 0) { remoteRepository.createFolderWithName(any()) }
+
+                        verify { remoteRepository.upload(dailyFolder, localFile) }
+                    }
+                }
+            }
+
+
+            And("no remote daily folder existing for the day of the file") {
+
+                every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns true
+
+
+                When("securing file") {
+
+                    service.secure(localFile)
+
+                    Then("""daily folder gets created
+                        |and the file gets secured in the newly created folder
+                        |and the creation of the folder gets reported
+                        """.trimMargin()) {
+
+                        verifyOrder {
+                            remoteRepository.createFolderWithName(dailyFolder.name)
+                            remoteRepository.upload(dailyFolder, localFile)
+                            securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
+                        }
+                    }
+                }
             }
         }
-    }
+
 
 // todo remove
 //    given("A batch of files to secure, dated across several days with remote folders for some of the files missing") {
 //
-//        val fileRepository: FileRepository = mockk(relaxed = true)
+//        val remoteRepository: RemoteRepository = mockk(relaxed = true)
 //
 //        val files_2018_12_30 = listOf(
 //            File("20181230700000-00-front.jpg"), // 2018-12-30
@@ -55,7 +96,7 @@ class SecurerSpec : BehaviorSpec({
 //
 //        val files = files_2018_12_30 + files_2018_12_31 + files_2019_01_01 + files_2019_01_02
 //
-//        val securerService = Securer(fileRepository)
+//        val securerService = Securer(remoteRepository)
 //
 //        `when`("securing files") {
 //
@@ -65,21 +106,22 @@ class SecurerSpec : BehaviorSpec({
 //                   |and uploads files to corresponding daily folders""".trimMargin()) {
 //
 //                verifyAll {
-//                    fileRepository.createFolder("2018-12-30")
-//                    fileRepository.createFolder("2018-12-31")
-//                    fileRepository.createFolder("2019-01-01")
-//                    fileRepository.createFolder("2019-01-02")
+//                    remoteRepository.createFolder("2018-12-30")
+//                    remoteRepository.createFolder("2018-12-31")
+//                    remoteRepository.createFolder("2019-01-01")
+//                    remoteRepository.createFolder("2019-01-02")
 //                }
 //
 //                verifyAll {
-//                    fileRepository.upload(files_2018_12_30, "2018-12-30")
-//                    fileRepository.upload(files_2018_12_31, "2018-12-31")
-//                    fileRepository.upload(files_2019_01_01, "2019-01-01")
-//                    fileRepository.upload(files_2019_01_02, "2019-01-02")
+//                    remoteRepository.upload(files_2018_12_30, "2018-12-30")
+//                    remoteRepository.upload(files_2018_12_31, "2018-12-31")
+//                    remoteRepository.upload(files_2019_01_01, "2019-01-01")
+//                    remoteRepository.upload(files_2019_01_02, "2019-01-02")
 //                }
 //
 //                verify(exactly = 0) { files.any() }
 //            }
 //        }
 //    }
-})
+    }
+}
