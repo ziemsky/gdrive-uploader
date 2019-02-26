@@ -8,6 +8,7 @@ import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
 import io.kotlintest.TestCase
+import io.kotlintest.fail
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.BehaviorSpec
 import mu.KotlinLogging
@@ -88,8 +89,35 @@ class GDriveFileRepositorySpec(val drive: Drive,
             }
         }
 
+        given("remote daily folders exist") {
 
-        // todo test for caching of remote folders on start
+            `when`("asked for daily folders count") {
+
+                then("returns the number of existing daily folders") {
+                    fail("Not implemented, yet.")
+                }
+            }
+
+            `when`("asked for finding oldest daily folder count") {
+
+                then("returns the oldest of the existing daily folders") {
+                    fail("Not implemented, yet.")
+                }
+            }
+
+            `when`("asked to removed an existing folder") {
+
+                then("deletes requested folder with its content") {
+                    fail("Not implemented, yet.")
+                }
+            }
+        }
+
+        // todo error cases for when cache is out of synch (deletion, finding, upload, etc.); errors should be reported
+
+        // todo error cases for when more than one folder is found when expecting one (oldest)
+
+        // todo test for caching of remote folders on start; consider making cache an external dependency for storing local state
 
         // todo for exception-handling cases, extend Drive (it's not final), intercept selected calls to emulate exceptions to test passing of those out of the repo class
     }

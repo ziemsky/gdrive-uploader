@@ -14,6 +14,10 @@ class GDriveFileRepository(val drive: Drive) : FileRepository {
 
     private val topLevelFolders: MutableList<GDriveFolder> = getTopLevelFolders() // todo synchronised access?
 
+    override fun dailyFolderCount(): Int {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun upload(targetFolder: RepoFolder, localFile: LocalFile) {
 
         // Note: has to upload one by one because, at the moment of writing, Google Drive API doesn't support batching

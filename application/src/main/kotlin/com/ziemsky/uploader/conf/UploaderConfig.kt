@@ -16,17 +16,17 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.integration.config.EnableIntegration
-import org.springframework.integration.dsl.IntegrationFlow
-import org.springframework.integration.dsl.IntegrationFlows
-import org.springframework.integration.dsl.MessageChannelSpec
-import org.springframework.integration.dsl.MessageChannels
+import org.springframework.integration.dsl.*
 import org.springframework.integration.dsl.Pollers.fixedDelay
 import org.springframework.integration.file.dsl.Files
 import org.springframework.integration.scheduling.PollerMetadata
 import java.io.File
 import java.nio.file.Paths
+import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
+import java.util.function.Supplier
 
 private val log = KotlinLogging.logger {}
 
@@ -48,29 +48,6 @@ class UploaderConfig {
     // LOCAL_FILES_TO_SECURE_CHANNEL
     //          |
     //       securer -> GDriveClient
-
-
-//    @Bean
-//    fun uploaderConfigProperties(
-//            @Value("\${conf.path}/application.conf") configFilePath: Path,
-//            @Value("\${conf.path}") confPath: String
-//    ): UploaderConfigProperties {
-//
-//        val config = ConfigFactory
-//                .parseFile(configFilePath.toFile())
-//                .resolveWith(
-//                        ConfigFactory.parseMap(
-//                                hashMapOf("CONF_PATH" to confPath),
-//                                "env vars"
-//                        )
-//                )
-//
-//        val testProperties = ConfigBeanFactory.create(config, MutableUploaderConfigProperties::class.java)
-//
-//        log.info { "$javaClass: $testProperties" }
-//
-//        return testProperties
-//    }
 
     @Bean
     internal fun inboundFileReaderEndpoint(config: UploaderConfigProperties, env: Environment): IntegrationFlow {
@@ -128,6 +105,34 @@ class UploaderConfig {
                 .nullChannel()
     }
 
+//    @Scheduled(cron = "0 1 0 * * *")
+//    @Bean
+//    internal fun rotateDirs(janitor: Janitor) {
+//        janitor.rotateRemoteDailyFolders()
+//    }
+
+
+
+
+    @Bean
+    internal fun rotateRemoteDailyFolders(janitor: Janitor) {
+
+        // todo make the flow read from a channel
+        //  make cron scheduler send to the channel one message a day
+        //  make application start send single message to the channel
+
+        // val cronPattern = "*/5 * * * * *"
+        val cronPattern = "0 1 0 * * *"
+
+        val supplier = Supplier<LocalDate> { LocalDate.now() }
+        val consumer = Consumer<SourcePollingChannelAdapterSpec> { e -> e.poller(Pollers.cron(cronPattern)) }
+
+        IntegrationFlows.from(supplier, consumer)
+                .handle(janitor::rotateRemoteDailyFolders)
+                // .handle<LocalDate> { payload, _ -> janitor.rotateRemoteDailyFolders() }
+                .nullChannel()
+    }
+
     @Bean
     internal fun securerService(fileRepository: FileRepository): Securer {
         return Securer(fileRepository)
@@ -152,8 +157,8 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun janitor(): Janitor {
-        return Janitor()
+    internal fun janitor(fileRepository: FileRepository): Janitor {
+        return Janitor(fileRepository, 5) // todo config, validate > 0
     }
 
     @Bean

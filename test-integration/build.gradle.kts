@@ -8,6 +8,8 @@ plugins {
 }
 
 dependencies {
+    implementation(kotlin("stdlib-jdk8"))
+
     testImplementation(project(":test-shared-resources"))
     testImplementation(project(":application"))
 
@@ -35,7 +37,8 @@ dependencies {
     implementation("ch.qos.logback:logback-classic")
 
     testRuntime("com.fasterxml.jackson.core:jackson-databind")
-    implementation(kotlin("stdlib-jdk8"))
+
+    testImplementation("io.mockk:mockk")
 }
 
 val test by tasks.getting(Test::class) {
