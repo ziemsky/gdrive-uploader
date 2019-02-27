@@ -47,6 +47,14 @@ class GDriveFileRepository(val drive: Drive) : FileRepository {
         // drive.files().create(gDriveFile, content)
     }
 
+    override fun findOldestDailyFolder(): RepoFolder {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun deleteFolder(repoFolder: RepoFolder) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     private fun folderWithNameAbsent(folderName: RepoFolderName): Boolean {
         return findFolderByName(folderName) == null
     }

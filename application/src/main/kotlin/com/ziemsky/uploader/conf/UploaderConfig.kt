@@ -111,9 +111,6 @@ class UploaderConfig {
 //        janitor.rotateRemoteDailyFolders()
 //    }
 
-
-
-
     @Bean
     internal fun rotateRemoteDailyFolders(janitor: Janitor) {
 
@@ -121,7 +118,6 @@ class UploaderConfig {
         //  make cron scheduler send to the channel one message a day
         //  make application start send single message to the channel
 
-        // val cronPattern = "*/5 * * * * *"
         val cronPattern = "0 1 0 * * *"
 
         val supplier = Supplier<LocalDate> { LocalDate.now() }
@@ -129,7 +125,6 @@ class UploaderConfig {
 
         IntegrationFlows.from(supplier, consumer)
                 .handle(janitor::rotateRemoteDailyFolders)
-                // .handle<LocalDate> { payload, _ -> janitor.rotateRemoteDailyFolders() }
                 .nullChannel()
     }
 
