@@ -146,8 +146,8 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun janitor(remoteRepository: RemoteRepository): Janitor {
-        return Janitor(remoteRepository, 5) // todo config, validate > 0
+    internal fun janitor(remoteRepository: RemoteRepository, config: UploaderConfigProperties): Janitor {
+        return Janitor(remoteRepository, config.rotation().maxDailyFolders())
     }
 
     @Bean

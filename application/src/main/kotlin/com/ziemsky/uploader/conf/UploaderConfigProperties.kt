@@ -153,6 +153,7 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         @Positive
         var maxDailyFolders: Int = 5
 
+        @NotBlank
         var cron: String = "0 1 */3 * * *"
 
         override fun maxDailyFolders(): Int {
