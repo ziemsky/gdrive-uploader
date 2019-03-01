@@ -105,22 +105,17 @@ class UploaderConfig {
 //        janitor.rotateRemoteDailyFolders()
 //    }
 
+    // todo make the flow read from a channel
+    //  make cron scheduler send to the channel one message a day
+    //  make application start send single message to the channel
     @Bean
-    internal fun rotateRemoteDailyFolders(janitor: Janitor): IntegrationFlow {
-
-        // todo make the flow read from a channel
-        //  make cron scheduler send to the channel one message a day
-        //  make application start send single message to the channel
-
-        val cronPattern = "0 1 0 * * *" // todo config + e2e test? now that e2e starts the app itself, it could be easier to test
-
-        val supplier = Supplier<LocalDate> { LocalDate.now() }
-        val consumer = Consumer<SourcePollingChannelAdapterSpec> { e -> e.poller(Pollers.cron(cronPattern)) }
-
-        return IntegrationFlows.from(supplier, consumer)
-                .handle<LocalDate> { _, _ -> janitor.rotateRemoteDailyFolders() }
-                .nullChannel()
-    }
+    internal fun rotateRemoteDailyFolders(janitor: Janitor, config: UploaderConfigProperties): IntegrationFlow = IntegrationFlows
+            .from(
+                    Supplier { LocalDate.now() },
+                    Consumer { e -> e.poller(Pollers.cron(config.rotation().cron())) }
+            )
+            .handle<LocalDate> { _, _ -> janitor.rotateRemoteDailyFolders() }
+            .nullChannel()
 
     @Bean
     internal fun securerService(remoteRepository: RemoteRepository): Securer {
