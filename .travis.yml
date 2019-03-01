@@ -5,7 +5,7 @@ before_install:
   -in conf/travis_ci/google/gdrive/secrets.tar.enc
   -out conf/travis_ci/google/gdrive/secrets.tar
   -d
-- pushd config/travis_ci/google/gdrive && tar xvf secrets.tar && popd
+- pushd conf/travis_ci/google/gdrive && tar xvf secrets.tar && popd
 script:
 - pwd
 - "./gradlew check -Puploader.run.environment=travis_ci --info --no-daemon"
