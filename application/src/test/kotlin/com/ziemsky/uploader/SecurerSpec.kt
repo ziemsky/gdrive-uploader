@@ -11,13 +11,13 @@ class SecurerSpec : BehaviorSpec({
 
     given("A file to secure") {
 
-        val fileRepository: FileRepository = mockk(relaxed = true)
+        val remoteRepository: RemoteRepository = mockk(relaxed = true)
 
         val localFile = LocalFile(File("20180901120000-00-front.jpg"))
 
         val dailyFolder = RepoFolder.from(localFile.date)
 
-        val service = Securer(fileRepository)
+        val service = Securer(remoteRepository)
 
 
         `when`("securing file") {
@@ -26,7 +26,7 @@ class SecurerSpec : BehaviorSpec({
 
             then("file gets secured in the repository in corresponding folder") {
 
-                verify { fileRepository.upload(dailyFolder, localFile) }
+                verify { remoteRepository.upload(dailyFolder, localFile) }
             }
         }
     }
@@ -34,7 +34,7 @@ class SecurerSpec : BehaviorSpec({
 // todo remove
 //    given("A batch of files to secure, dated across several days with remote folders for some of the files missing") {
 //
-//        val fileRepository: FileRepository = mockk(relaxed = true)
+//        val remoteRepository: RemoteRepository = mockk(relaxed = true)
 //
 //        val files_2018_12_30 = listOf(
 //            File("20181230700000-00-front.jpg"), // 2018-12-30
@@ -55,7 +55,7 @@ class SecurerSpec : BehaviorSpec({
 //
 //        val files = files_2018_12_30 + files_2018_12_31 + files_2019_01_01 + files_2019_01_02
 //
-//        val securerService = Securer(fileRepository)
+//        val securerService = Securer(remoteRepository)
 //
 //        `when`("securing files") {
 //
@@ -65,17 +65,17 @@ class SecurerSpec : BehaviorSpec({
 //                   |and uploads files to corresponding daily folders""".trimMargin()) {
 //
 //                verifyAll {
-//                    fileRepository.createFolder("2018-12-30")
-//                    fileRepository.createFolder("2018-12-31")
-//                    fileRepository.createFolder("2019-01-01")
-//                    fileRepository.createFolder("2019-01-02")
+//                    remoteRepository.createFolder("2018-12-30")
+//                    remoteRepository.createFolder("2018-12-31")
+//                    remoteRepository.createFolder("2019-01-01")
+//                    remoteRepository.createFolder("2019-01-02")
 //                }
 //
 //                verifyAll {
-//                    fileRepository.upload(files_2018_12_30, "2018-12-30")
-//                    fileRepository.upload(files_2018_12_31, "2018-12-31")
-//                    fileRepository.upload(files_2019_01_01, "2019-01-01")
-//                    fileRepository.upload(files_2019_01_02, "2019-01-02")
+//                    remoteRepository.upload(files_2018_12_30, "2018-12-30")
+//                    remoteRepository.upload(files_2018_12_31, "2018-12-31")
+//                    remoteRepository.upload(files_2019_01_01, "2019-01-01")
+//                    remoteRepository.upload(files_2019_01_02, "2019-01-02")
 //                }
 //
 //                verify(exactly = 0) { files.any() }

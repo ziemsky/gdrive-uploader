@@ -12,7 +12,7 @@ class JanitorSpec : BehaviorSpec() {
 
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private var fileRepo = FileRepoStub()
+    private var fileRepo = RemoteRepoStub()
 
     private var janitor = Janitor(fileRepo, maxDailyFoldersCount = 3)
 
@@ -28,7 +28,6 @@ class JanitorSpec : BehaviorSpec() {
                     "2019-01-04",
                     "2019-01-05"
             )
-
 
             When("rotating remote folders") {
 
@@ -92,10 +91,24 @@ class JanitorSpec : BehaviorSpec() {
                 }
             }
         }
+
+        Given("No remote daily folders") {
+
+            fileRepo.resetDailyFolders()
+
+            When("rotating remote daily folders") {
+
+                Then("does not remove anything and does not fail") {
+
+                }
+            }
+        }
+
+
     }
 }
 
-class FileRepoStub : FileRepository {
+class RemoteRepoStub : RemoteRepository { // todo move to shared test resources?
 
     private var dailyFolderNamesSortedAscendingly: SortedSet<String> = sortedSetOf()
 
@@ -120,8 +133,12 @@ class FileRepoStub : FileRepository {
         // no-op: irrelevant in these tests
     }
 
-    override fun findOldestDailyFolder(): RepoFolder {
-        return RepoFolder.from(LocalDate.parse(dailyFolderNamesSortedAscendingly.first()))
+    override fun findOldestDailyFolder(): RepoFolder? {
+        return if (dailyFolderNamesSortedAscendingly.isEmpty()) {
+            null
+        } else {
+            RepoFolder.from(LocalDate.parse(dailyFolderNamesSortedAscendingly.first()))
+        }
     }
 
     override fun deleteFolder(repoFolder: RepoFolder) {

@@ -4,10 +4,7 @@ import com.ziemsky.fsstructure.FsStructure.*
 import com.ziemsky.gdriveuploader.test.e2e.config.E2ETestConfig
 import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
 import com.ziemsky.uploader.main
-import io.kotlintest.Spec
-import io.kotlintest.eventually
-import io.kotlintest.minutes
-import io.kotlintest.shouldBe
+import io.kotlintest.*
 import io.kotlintest.specs.BehaviorSpec
 import mu.KotlinLogging
 import org.opentest4j.AssertionFailedError
@@ -23,17 +20,19 @@ private val log = KotlinLogging.logger {}
  * most critical functionality, leaving testing edge cases to cheaper integration and unit tests.
  */
 @ContextConfiguration(classes = [(E2ETestConfig::class)])
-//        // TODO this is now integration test (albeit integrating all layers, rather than just two as the rest of the
-//        //  integration tests in this module), focused on testing that Spring Integration flow is built correctly so
-//        //  move it to test-integration.
-//        //  test-e2e to be used again once building of Docker image gets introduced. At this point,
-//        //  a copy of GDrive client will need to be placed in buildSrc so that it's available to the build script
-//        //  to setup state in GDrive ahead of the test task.
-class UploadSpec(
+// TODO this is now integration test (albeit integrating all layers, rather than just two as the rest of the
+//  integration tests in this module), focused on testing that Spring Integration flow is built correctly so
+//  move it to test-integration.
+//  test-e2e to be used again once building of Docker image gets introduced. At this point,
+//  a copy of GDrive client will need to be placed in buildSrc so that it's available to the build script
+//  to setup state in GDrive ahead of the test task.
+class UploaderSpec(
         @Value("\${conf.path}") private val confPath: String,
         @Value("\${test.e2e.uploader.monitoring.path}") private val monitoringPath: String,
         testFixtures: TestFixtures
 ) : BehaviorSpec() {
+
+    override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
     override fun beforeSpec(spec: Spec) {
         // todo custom Spring Boot Hocon Property Source Starter so that placeholdres can be used in applicatin.conf?
@@ -50,11 +49,11 @@ class UploadSpec(
     }
 
     init {
-        given("some remote content and some files in the source dir") {
+        Given("some remote content and some files in the source dir") {
 
             // todo elaborate description
             testFixtures.remoteStructureDelete()
-            testFixtures.cleanupLocalTestDir() // todo consistent clenup methods' naming
+            testFixtures.localTestContentDelete() // todo consistent clenup methods' naming
 
             // enough existing daily folders to trigger rotation of the oldest
             val remoteContentOriginal = create(
@@ -89,18 +88,21 @@ class UploadSpec(
             // - enough to trigger rotation of the oldest
 
             val localContentToUpload = create(
-                    // 2018-09-08
+                    // 2018-09-01 - files from day with existing remote folder
+                    fle("20180901120000-00-front.jpg"),
+
+                    // 2018-09-08 - files from day with no remote folder
                     fle("20180908120000-00-front.jpg"),
                     fle("20180908120000-01-front.jpg"),
                     fle("20180908120000-02-front.jpg"),
                     fle("20180908120000-03-front.jpg"),
-                    // 2018-09-09
+                    // 2018-09-09 - files from day with no remote folder
                     fle("20180909120000-00-front.jpg"),
                     fle("20180909120000-01-front.jpg"),
                     fle("20180909120000-02-front.jpg"),
                     fle("20180909120000-03-front.jpg"),
                     fle("20180909120000-04-front.jpg"),
-                    // 2018-09-11
+                    // 2018-09-11 - files from day with no remote folder
                     fle("20180911120000-00-front.jpg"),
                     fle("20180911120000-01-front.jpg"),
                     fle("20180911120000-02-front.jpg"),
@@ -111,36 +113,43 @@ class UploadSpec(
 
             startApplication()
 
-            `when`("files appear in the monitored location") {
+            When("files appear in the monitored location") {
 
                 testFixtures.localStructureCreateFrom(localContentToUpload)
                 log.debug { "Created Local Structure" }
 
-                then("""it uploads all local files
-                   |and rotates the remote ones
-                   |and deletes local original files""".trimMargin()) {
+                Then("""it uploads all local files
+                   |and deletes local original files
+                   |and does not remove any existing remote content""".trimMargin()) {
 
                     // mix of freshly uploaded files and the remote rotation survivors
                     val remoteContentExpected = create(
 
-                            // actual content, result of the newly uploaded files and the remote survivors of the rotation
-                            dir("2018-09-03",
+                            // actual content: existing ones + the newly uploaded
+                            dir("2018-09-01",                           // pre-existing remote file
+                                    fle("20180901120000-00-front.jpg"), // pre-existing remote file
+                                    fle("20180901120000-00-front.jpg")  // newly uploaded file
+                            ),
+                            dir("2018-09-02",                           // pre-existing remote folder and content
+                                    fle("20180902120000-00-front.jpg")
+                            ),
+                            dir("2018-09-03",                           // pre-existing remote folder and content
                                     fle("20180903120000-00-front.jpg")
                             ),
-                            dir("2018-09-08",
+                            dir("2018-09-08",                           // new remote folder and content
                                     fle("20180908120000-00-front.jpg"),
                                     fle("20180908120000-01-front.jpg"),
                                     fle("20180908120000-02-front.jpg"),
                                     fle("20180908120000-03-front.jpg")
                             ),
-                            dir("2018-09-09",
+                            dir("2018-09-09",                           // new remote folder and content
                                     fle("20180909120000-00-front.jpg"),
                                     fle("20180909120000-01-front.jpg"),
                                     fle("20180909120000-02-front.jpg"),
                                     fle("20180909120000-03-front.jpg"),
                                     fle("20180909120000-04-front.jpg")
                             ),
-                            dir("2018-09-11",
+                            dir("2018-09-11",                           // new remote folder and content
                                     fle("20180911120000-00-front.jpg"),
                                     fle("20180911120000-01-front.jpg"),
                                     fle("20180911120000-02-front.jpg"),
@@ -149,7 +158,7 @@ class UploadSpec(
                                     fle("20180911120000-05-front.jpg")
                             ),
 
-                            // not matching, ignored, remote content to be retained post-rotaion
+                            // not matching, ignored, remote content to be retained
                             fle("not matching, top level file"),
                             dir("not matching, top-level dir, empty"),
                             dir("not matching, top-level dir, with content",
@@ -174,5 +183,33 @@ class UploadSpec(
                 }
             }
         }
+
+        Given("Remote folders in a number exceeding configured limit") {
+
+//            fileRepo.resetDailyFolders()
+//            fileRepo.addDailyFolders(
+//                    "2019-01-01",
+//                    "2019-01-02",
+//                    "2019-01-03",
+//                    "2019-01-04",
+//                    "2019-01-05"
+//            )
+
+            When("rotating remote folders") { // todo
+
+//                janitor.rotateRemoteDailyFolders()
+
+                Then("removes oldest daily folders until configured limit is reached") {
+
+//                    fileRepo.dailyFolders() shouldBe setOf(
+//                            "2019-01-03",
+//                            "2019-01-04",
+//                            "2019-01-05"
+//                    )
+                }
+            }
+        }
+        
+        
     }
 }

@@ -1,11 +1,11 @@
 package com.ziemsky.uploader
 
 import com.ziemsky.uploader.model.local.LocalFile
-import com.ziemsky.uploader.model.repo.RepoFolder
 import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
-class Janitor(private val fileRepository: FileRepository, private val maxDailyFoldersCount: Int) {
+
+class Janitor(private val remoteRepository: RemoteRepository, private val maxDailyFoldersCount: Int) {
 
     fun cleanupSecuredFile(localFile: LocalFile) {
         log.info { "Deleting $localFile" }
@@ -14,10 +14,8 @@ class Janitor(private val fileRepository: FileRepository, private val maxDailyFo
     }
 
     fun rotateRemoteDailyFolders() {
-        while (fileRepository.dailyFolderCount() > maxDailyFoldersCount) {
-            val oldestRemoteFolder: RepoFolder = fileRepository.findOldestDailyFolder()
-
-            fileRepository.deleteFolder(oldestRemoteFolder)
+        while (remoteRepository.dailyFolderCount() > maxDailyFoldersCount) {
+            remoteRepository.findOldestDailyFolder()?.let(remoteRepository::deleteFolder)
         }
     }
 }

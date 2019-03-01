@@ -3,7 +3,6 @@ package com.ziemsky.uploader.test.integration
 import com.ziemsky.fsstructure.FsStructure.create
 import com.ziemsky.fsstructure.FsStructure.fle
 import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
-import com.ziemsky.uploader.FileRepository
 import com.ziemsky.uploader.Janitor
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
@@ -26,7 +25,7 @@ class JanitorSpec(testFixtures: TestFixtures,
 
     override fun beforeSpec(spec: Spec) {
         janitor = Janitor(
-                mockk<FileRepository>(), // unused in these tests
+                remoteRepository = mockk(), // unused in these tests
                 maxDailyFoldersCount = 5
         )
     }
@@ -35,7 +34,7 @@ class JanitorSpec(testFixtures: TestFixtures,
 
         given("Existing local files, some to keep, one to cleanup") {
 
-            testFixtures.cleanupLocalTestDir()
+            testFixtures.localTestContentDelete()
 
 
             // todo get file from fle? can be tricky, since the actual path only comes to play on FsStructure.saveIn

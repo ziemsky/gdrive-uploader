@@ -3,11 +3,11 @@ package com.ziemsky.uploader
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
 
-class Securer(val fileRepository: FileRepository) {
+class Securer(val remoteRepository: RemoteRepository) {
 
     fun secure(localFile: LocalFile) {
 
-        fileRepository.upload(RepoFolder.from(localFile.date), localFile)
+        remoteRepository.upload(RepoFolder.from(localFile.date), localFile)
     }
 
 

@@ -104,26 +104,22 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
 
         remoteContent?.walk(
                 { dirItem ->
-
-                    log.info { "Creating remote ${dirItem}" }
-
                     var dir = com.google.api.services.drive.model.File()
                     dir.setName(dirItem.name())
                     dir.setMimeType(GOOGLE_DRIVE_FOLDER_MIMETYPE)
 
                     if (dirItem.isNested()) {
-                        val parentId: String? = parents[dirItem.parent()]?.id
+                        val parentId: String = parents[dirItem.parent()]?.id ?: "root"
                         dir.setParents(listOf(parentId))
                     }
 
                     dir = drive.files().create(dir).execute()
 
+                    log.info { "Created remote ${dirItem} with id ${dir.id}" }
+
                     parents.put(dirItem, dir)
                 },
                 { fileItem ->
-                    log.info { "Creating remote ${fileItem}" }
-
-
                     val file = com.google.api.services.drive.model.File()
                     file.setName(fileItem.name())
 
@@ -132,10 +128,11 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                         file.setParents(listOf(parentId))
                     }
 
-
                     val mediaContent = ByteArrayContent(null, fileItem?.content)
 
-                    drive.files().create(file, mediaContent).execute()
+                    val fileId = drive.files().create(file, mediaContent).execute().id
+
+                    log.info { "Created remote ${fileItem} with id ${fileId}" }
                 }
         )
     }
@@ -154,7 +151,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         return testDirectory.toFile().listFiles().isEmpty()
     }
 
-    fun cleanupLocalTestDir() { // todo remove, cleanup delegated to Gradle task
+    fun localTestContentDelete() {
 
         val testDir = testDirectory.toFile()
 

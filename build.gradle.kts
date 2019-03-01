@@ -80,7 +80,7 @@ subprojects {
             dependency("com.google.apis:google-api-services-drive:v3-rev20181101-$gDriveVersion")
             dependency("com.google.api-client:google-api-client:$gDriveVersion")
 
-            dependencySet("io.kotlintest:3.2.1") {
+            dependencySet("io.kotlintest:3.3.0") {
                 entry("kotlintest-runner-junit5")
                 entry("kotlintest-extensions-spring")
             }

@@ -1,9 +1,9 @@
 package com.ziemsky.uploader.conf
 
 import com.google.api.services.drive.Drive
-import com.ziemsky.uploader.FileRepository
-import com.ziemsky.uploader.GDriveFileRepository
+import com.ziemsky.uploader.GDriveRemoteRepository
 import com.ziemsky.uploader.Janitor
+import com.ziemsky.uploader.RemoteRepository
 import com.ziemsky.uploader.Securer
 import com.ziemsky.uploader.google.drive.GDriveProvider
 import com.ziemsky.uploader.model.local.LocalFile
@@ -75,35 +75,29 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun transformer(): IntegrationFlow {
-        return IntegrationFlows
-                .from(RAW_FILES_INCOMING_CHANNEL)
-                .transform(File::class.java, ::LocalFile)
-                .channel(LOCAL_FILES_TO_SECURE_CHANNEL)
-                .get()
-    }
+    internal fun transformer(): IntegrationFlow = IntegrationFlows
+            .from(RAW_FILES_INCOMING_CHANNEL)
+            .transform(File::class.java, ::LocalFile)
+            .channel(LOCAL_FILES_TO_SECURE_CHANNEL)
+            .get()
 
     @Bean
-    internal fun outboundFileUploaderEndpoint(securer: Securer): IntegrationFlow {
-        return IntegrationFlows
-                .from(LOCAL_FILES_TO_SECURE_CHANNEL)
-                .handle<LocalFile> { payload, _ ->
-                    securer.secure(payload)
-                    payload
-                }
-                .channel(SECURED_FILES_CHANNEL)
-                .get()
-    }
+    internal fun outboundFileUploaderEndpoint(securer: Securer): IntegrationFlow = IntegrationFlows
+            .from(LOCAL_FILES_TO_SECURE_CHANNEL)
+            .handle<LocalFile> { payload, _ ->
+                securer.secure(payload)
+                payload
+            }
+            .channel(SECURED_FILES_CHANNEL)
+            .get()
 
     @Bean
-    internal fun janitorEndpoint(janitor: Janitor): IntegrationFlow {
-        return IntegrationFlows
-                .from(SECURED_FILES_CHANNEL)
-                .handle<LocalFile> { payload, _ ->
-                    janitor.cleanupSecuredFile(payload)
-                }
-                .nullChannel()
-    }
+    internal fun janitorEndpoint(janitor: Janitor): IntegrationFlow = IntegrationFlows
+            .from(SECURED_FILES_CHANNEL)
+            .handle<LocalFile> { payload, _ ->
+                janitor.cleanupSecuredFile(payload)
+            }
+            .nullChannel()
 
 //    @Scheduled(cron = "0 1 0 * * *")
 //    @Bean
@@ -112,25 +106,25 @@ class UploaderConfig {
 //    }
 
     @Bean
-    internal fun rotateRemoteDailyFolders(janitor: Janitor) {
+    internal fun rotateRemoteDailyFolders(janitor: Janitor): IntegrationFlow {
 
         // todo make the flow read from a channel
         //  make cron scheduler send to the channel one message a day
         //  make application start send single message to the channel
 
-        val cronPattern = "0 1 0 * * *"
+        val cronPattern = "0 1 0 * * *" // todo config + e2e test? now that e2e starts the app itself, it could be easier to test
 
         val supplier = Supplier<LocalDate> { LocalDate.now() }
         val consumer = Consumer<SourcePollingChannelAdapterSpec> { e -> e.poller(Pollers.cron(cronPattern)) }
 
-        IntegrationFlows.from(supplier, consumer)
-                .handle(janitor::rotateRemoteDailyFolders)
+        return IntegrationFlows.from(supplier, consumer)
+                .handle<LocalDate> { _, _ -> janitor.rotateRemoteDailyFolders() }
                 .nullChannel()
     }
 
     @Bean
-    internal fun securerService(fileRepository: FileRepository): Securer {
-        return Securer(fileRepository)
+    internal fun securerService(remoteRepository: RemoteRepository): Securer {
+        return Securer(remoteRepository)
     }
 
     @Bean
@@ -147,13 +141,18 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun repository(drive: Drive): FileRepository {
-        return GDriveFileRepository(drive)
+    internal fun repository(drive: Drive): RemoteRepository {
+
+        val gDriveRemoteRepository = GDriveRemoteRepository(drive)
+
+        gDriveRemoteRepository.init()
+
+        return gDriveRemoteRepository
     }
 
     @Bean
-    internal fun janitor(fileRepository: FileRepository): Janitor {
-        return Janitor(fileRepository, 5) // todo config, validate > 0
+    internal fun janitor(remoteRepository: RemoteRepository): Janitor {
+        return Janitor(remoteRepository, 5) // todo config, validate > 0
     }
 
     @Bean
