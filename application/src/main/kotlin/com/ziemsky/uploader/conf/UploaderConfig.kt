@@ -62,7 +62,7 @@ class UploaderConfig {
                 .from(
                         Files.inboundAdapter(
                                 // todo switch from polling to watch service? See docs for caveats!:
-                                // https://docs.spring.io/spring-integration/reference/html/files.html#watch-service-directory-scanner
+                                //  https://docs.spring.io/spring-integration/reference/html/#watch-service-directory-scanner
                                 config.monitoring().path().toFile(),
                                 Comparator.comparing<File, String>(
                                         { it.name },

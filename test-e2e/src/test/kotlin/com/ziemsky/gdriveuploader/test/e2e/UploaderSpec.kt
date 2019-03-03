@@ -45,7 +45,7 @@ class UploaderSpec(
     }
 
     private fun startApplication() {
-        main(arrayOf("--spring.config.additional-location=$confPath/application.conf"))
+        main(arrayOf("--spring.config.additional-location=$confPath/application.conf --uploader.rotation.maxDailyFolders=5"))
     }
 
     init {
@@ -56,10 +56,10 @@ class UploaderSpec(
             testFixtures.localTestContentDelete() // todo consistent clenup methods' naming
 
             // enough existing daily folders to trigger rotation of the oldest
-            val remoteContentOriginal = create(
+            val preExistingRemoteContent = create(
 
                     // matching content
-                    dir("2018-09-01",
+                    dir("2018-09-01", // to be removed during rotation
                             fle("20180901120000-00-front.jpg")
                     ),
                     dir("2018-09-02",
@@ -81,15 +81,15 @@ class UploaderSpec(
                             )
                     )
             )
-            testFixtures.remoteStructureCreateFrom(remoteContentOriginal)
+            testFixtures.remoteStructureCreateFrom(preExistingRemoteContent)
 
             // A set of files:
             // - scattered across few, non-consecutive dates,
             // - enough to trigger rotation of the oldest
 
             val localContentToUpload = create(
-                    // 2018-09-01 - files from day with existing remote folder
-                    fle("20180901120000-00-front.jpg"),
+                    // 2018-09-03 - files from day with existing remote folder
+                    fle("20180903120000-01-front.jpg"),
 
                     // 2018-09-08 - files from day with no remote folder
                     fle("20180908120000-00-front.jpg"),
@@ -118,23 +118,18 @@ class UploaderSpec(
                 testFixtures.localStructureCreateFrom(localContentToUpload)
                 log.debug { "Created Local Structure" }
 
-                Then("""it uploads all local files
+                then("""it uploads all local files
+                   |and rotates the remote ones
                    |and deletes local original files
-                   |and does not remove any existing remote content""".trimMargin()) {
+                   |and does not delete any other remote content""".trimMargin()) {
 
                     // mix of freshly uploaded files and the remote rotation survivors
                     val remoteContentExpected = create(
 
                             // actual content: existing ones + the newly uploaded
-                            dir("2018-09-01",                           // pre-existing remote file
-                                    fle("20180901120000-00-front.jpg"), // pre-existing remote file
-                                    fle("20180901120000-00-front.jpg")  // newly uploaded file
-                            ),
-                            dir("2018-09-02",                           // pre-existing remote folder and content
-                                    fle("20180902120000-00-front.jpg")
-                            ),
                             dir("2018-09-03",                           // pre-existing remote folder and content
-                                    fle("20180903120000-00-front.jpg")
+                                    fle("20180903120000-00-front.jpg"), // pre-existing remote file
+                                    fle("20180903120000-01-front.jpg")  // newly uploaded file
                             ),
                             dir("2018-09-08",                           // new remote folder and content
                                     fle("20180908120000-00-front.jpg"),
@@ -183,33 +178,5 @@ class UploaderSpec(
                 }
             }
         }
-
-        Given("Remote folders in a number exceeding configured limit") {
-
-//            fileRepo.resetDailyFolders()
-//            fileRepo.addDailyFolders(
-//                    "2019-01-01",
-//                    "2019-01-02",
-//                    "2019-01-03",
-//                    "2019-01-04",
-//                    "2019-01-05"
-//            )
-
-            When("rotating remote folders") { // todo
-
-//                janitor.rotateRemoteDailyFolders()
-
-                Then("removes oldest daily folders until configured limit is reached") {
-
-//                    fileRepo.dailyFolders() shouldBe setOf(
-//                            "2019-01-03",
-//                            "2019-01-04",
-//                            "2019-01-05"
-//                    )
-                }
-            }
-        }
-        
-        
     }
 }
