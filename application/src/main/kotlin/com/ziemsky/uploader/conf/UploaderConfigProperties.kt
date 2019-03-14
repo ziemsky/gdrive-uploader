@@ -17,6 +17,12 @@ interface UploaderConfigProperties {
     fun rotation(): Rotation
 
     fun google(): Google
+
+    fun upload(): Upload
+}
+
+interface Upload {
+    fun maxConcurrentUploads(): Int
 }
 
 interface Monitoring {
@@ -25,7 +31,6 @@ interface Monitoring {
 
 interface Rotation {
     fun maxDailyFolders(): Int
-    fun cron(): String
 }
 
 interface Google {
@@ -60,21 +65,19 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
     @NestedConfigurationProperty
     val google: GoogleProperties = GoogleProperties()
 
-    override fun monitoring(): Monitoring {
-        return monitoring
-    }
+    @NestedConfigurationProperty
+    val upload: UploadProperties = UploadProperties()
 
-    override fun rotation(): Rotation {
-        return rotation
-    }
+    override fun monitoring(): Monitoring = monitoring
 
-    override fun google(): Google {
-        return google
-    }
+    override fun rotation(): Rotation = rotation
 
-    override fun toString(): String {
-        return "MutableUploaderConfigProperties(monitoring=$monitoring, rotation=$rotation, google=$google)"
-    }
+    override fun google(): Google = google
+
+    override fun upload(): Upload = upload
+
+    override fun toString(): String =
+            "MutableUploaderConfigProperties(monitoring=$monitoring, rotation=$rotation, google=$google, upload=$upload)"
 
 
     class MonitoringProperties : Monitoring {
@@ -86,30 +89,20 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         @NotNull
         lateinit var path: Path
 
-        override fun path(): Path {
-            return path
-        }
+        override fun path(): Path = path
 
-        override fun toString(): String {
-            return "MonitoringProperties(path=$path)"
-        }
-
-
+        override fun toString(): String = "MonitoringProperties(path=$path)"
     }
+
 
     class GoogleProperties : Google {
 
         @NestedConfigurationProperty
         val drive: DriveProperties = DriveProperties()
 
-        override fun drive(): Drive {
-            return drive
-        }
+        override fun drive(): Drive = drive
 
-        override fun toString(): String {
-            return "GoogleProperties(drive=$drive)"
-        }
-
+        override fun toString(): String = "GoogleProperties(drive=$drive)"
     }
 
     class DriveProperties : Drive {
@@ -126,26 +119,16 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         @NotNull
         lateinit var credentialsFile: Path
 
-        override fun applicationName(): String {
-            return applicationName
-        }
+        override fun applicationName(): String = applicationName
 
-        override fun applicationUserName(): String {
-            return applicationUserName
-        }
+        override fun applicationUserName(): String = applicationUserName
 
-        override fun tokensDirectory(): Path {
-            return tokensDirectory
-        }
+        override fun tokensDirectory(): Path = tokensDirectory
 
-        override fun credentialsFile(): Path {
-            return credentialsFile
-        }
+        override fun credentialsFile(): Path = credentialsFile
 
-        override fun toString(): String {
-            return "DriveProperties(applicationName='$applicationName', applicationUserName='$applicationUserName', tokensDirectory=$tokensDirectory, credentialsFile=$credentialsFile)"
-        }
-
+        override fun toString(): String =
+                "DriveProperties(applicationName='$applicationName', applicationUserName='$applicationUserName', tokensDirectory=$tokensDirectory, credentialsFile=$credentialsFile)"
     }
 
     class RotationProperties: Rotation {
@@ -153,19 +136,16 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         @Positive
         var maxDailyFolders: Int = 5
 
-        @NotBlank
-        var cron: String = "0 1 */3 * * *"
+        override fun maxDailyFolders(): Int = maxDailyFolders
 
-        override fun maxDailyFolders(): Int {
-            return maxDailyFolders
-        }
+        override fun toString(): String = "RotationProperties(maxDailyFolders=$maxDailyFolders)"
+    }
 
-        override fun cron(): String {
-            return cron
-        }
+    class UploadProperties: Upload {
 
-        override fun toString(): String {
-            return "RotationProperties(maxDailyFolders=$maxDailyFolders, cron='$cron')"
-        }
+        @Positive
+        var maxConcurrentUploads: Int = 2
+
+        override fun maxConcurrentUploads(): Int = maxConcurrentUploads
     }
 }

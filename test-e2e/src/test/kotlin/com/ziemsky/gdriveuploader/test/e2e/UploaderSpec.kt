@@ -81,7 +81,7 @@ class UploaderSpec(
                     fle("not matching, top level file"),
                     dir("not matching, top-level dir, empty"),
                     dir("not matching, top-level dir, with content",
-                            fle("2018090${maxDailyFolders}120000-00-front.jpg"), // matching, nested file
+                            fle("2018090120000-00-front.jpg"), // matching, nested file
                             dir("2018-09-03"), // matching, nested folder
                             dir("not matching, nested dir, empty"),
                             dir("not matching, nested dir, with content",
@@ -109,13 +109,13 @@ class UploaderSpec(
                     fle("20180909120000-01-front.jpg"),
                     fle("20180909120000-02-front.jpg"),
                     fle("20180909120000-03-front.jpg"),
-                    fle("20180909120000-0$maxDailyFolders-front.jpg"),
+                    fle("20180909120000-04-front.jpg"),
                     // 2018-09-11 - files from day with no remote folder
                     fle("20180911120000-00-front.jpg"),
                     fle("20180911120000-01-front.jpg"),
                     fle("20180911120000-02-front.jpg"),
                     fle("20180911120000-03-front.jpg"),
-                    fle("20180911120000-0$maxDailyFolders-front.jpg"),
+                    fle("20180911120000-04-front.jpg"),
                     fle("20180911120000-05-front.jpg")
             )
 
@@ -150,14 +150,14 @@ class UploaderSpec(
                                     fle("20180909120000-01-front.jpg"),
                                     fle("20180909120000-02-front.jpg"),
                                     fle("20180909120000-03-front.jpg"),
-                                    fle("20180909120000-0$maxDailyFolders-front.jpg")
+                                    fle("20180909120000-04-front.jpg")
                             ),
                             dir("2018-09-11",                           // new remote folder and content
                                     fle("20180911120000-00-front.jpg"),
                                     fle("20180911120000-01-front.jpg"),
                                     fle("20180911120000-02-front.jpg"),
                                     fle("20180911120000-03-front.jpg"),
-                                    fle("20180911120000-0$maxDailyFolders-front.jpg"),
+                                    fle("20180911120000-04-front.jpg"),
                                     fle("20180911120000-05-front.jpg")
                             ),
 
@@ -165,7 +165,7 @@ class UploaderSpec(
                             fle("not matching, top level file"),
                             dir("not matching, top-level dir, empty"),
                             dir("not matching, top-level dir, with content",
-                                    fle("2018090${maxDailyFolders}120000-00-front.jpg"), // matching, nested file
+                                    fle("2018090120000-00-front.jpg"), // matching, nested file
                                     dir("2018-09-03"), // matching, nested folder
                                     dir("not matching, nested dir, empty"),
                                     dir("not matching, nested dir, with content",
@@ -178,7 +178,6 @@ class UploaderSpec(
 
                     eventually(2.minutes, UncheckedIOException::class.java) {
                         eventually(2.minutes, AssertionFailedError::class.java) {
-                            //                    log.debug { "Verifying" }
                             testFixtures.localStructure() shouldBe empty // todo FsStructure.EMPTY
                             testFixtures.remoteStructure() shouldBe remoteContentExpected
                         }

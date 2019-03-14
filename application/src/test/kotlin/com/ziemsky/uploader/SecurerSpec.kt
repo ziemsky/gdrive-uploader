@@ -27,22 +27,13 @@ class SecurerSpec : BehaviorSpec() {
             val dailyFolder = RepoFolder.from(localFile.date)
 
 
-            And("remote daily folder existing for the day of the file") {
+            When("securing file") {
 
-                every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns false
+                service.secure(localFile)
 
+                Then("file gets secured in the repository in corresponding daily folder") {
 
-                When("securing file") {
-
-                    service.secure(localFile)
-
-                    Then("""file gets secured in the repository in corresponding folder
-                        |and no folder creation is attempted""".trimMargin()) {
-
-                        verify(exactly = 0) { remoteRepository.createFolderWithName(any()) }
-
-                        verify { remoteRepository.upload(dailyFolder, localFile) }
-                    }
+                    verify { remoteRepository.upload(dailyFolder, localFile) }
                 }
             }
 
@@ -52,20 +43,36 @@ class SecurerSpec : BehaviorSpec() {
                 every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns true
 
 
-                When("securing file") {
+                When("asked to ensure daily folder available in the repository for the file") {
 
-                    service.secure(localFile)
+                    service.ensureRemoteDailyFolder(localFile)
 
                     Then("""daily folder gets created
-                        |and the file gets secured in the newly created folder
                         |and the creation of the folder gets reported
                         """.trimMargin()) {
 
                         verifyOrder {
                             remoteRepository.createFolderWithName(dailyFolder.name)
-                            remoteRepository.upload(dailyFolder, localFile)
                             securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
                         }
+                    }
+                }
+            }
+
+
+            And("remote daily folder existing for the day of the file") {
+
+                every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns false
+
+                When("asked to ensure daily folder available in the repository for the file") {
+
+                    service.ensureRemoteDailyFolder(localFile)
+
+                    Then("""no folder creation is attempted
+                        |and no event gets emitted""".trimMargin()) {
+
+                        verify(exactly = 0) { remoteRepository.createFolderWithName(any()) }
+                        verify(exactly = 0) { securerEventReporter.notifyNewRemoteDailyFolderCreated(any()) }
                     }
                 }
             }

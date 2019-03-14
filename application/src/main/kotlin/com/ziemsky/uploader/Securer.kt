@@ -3,6 +3,9 @@ package com.ziemsky.uploader
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
 import com.ziemsky.uploader.model.repo.RepoFolderName
+import mu.KotlinLogging
+
+private val log = KotlinLogging.logger {}
 
 class Securer(
         private val remoteRepository: RemoteRepository,
@@ -11,18 +14,24 @@ class Securer(
 
     fun secure(localFile: LocalFile) {
 
-        val dailyRepoFolderName = RepoFolderName.from(localFile.date)
+        log.debug { "Securing $localFile" }
 
-        var newRemoteDailyFolderCreated = false
+        val dailyRepoFolder = RepoFolder.from(localFile.date)
+
+        remoteRepository.upload(dailyRepoFolder, localFile)
+    }
+
+
+    fun ensureRemoteDailyFolder(localFile: LocalFile) {
+
+        val dailyRepoFolderName = RepoFolderName.from(localFile.date)
 
         if (remoteRepository.topLevelFolderWithNameAbsent(dailyRepoFolderName)) {
             remoteRepository.createFolderWithName(dailyRepoFolderName)
-            newRemoteDailyFolderCreated = true
+            log.debug { "Created folder $dailyRepoFolderName" }
+            securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyRepoFolderName)
         }
 
-        remoteRepository.upload(RepoFolder.from(localFile.date), localFile)
-
-        if (newRemoteDailyFolderCreated) securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyRepoFolderName)
     }
 
 

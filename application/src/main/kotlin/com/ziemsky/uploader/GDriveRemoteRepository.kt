@@ -50,11 +50,10 @@ class GDriveRemoteRepository(val drive: Drive) : RemoteRepository {
     override fun upload(targetFolder: RepoFolder, localFile: LocalFile) {
 
         // Note: has to upload one by one because, at the moment of writing, Google Drive API doesn't support batching
-        // of media uploads nor downloads, even though it does support batching other types of requests.
+        // of media uploads nor downloads, even though it does support batching other types of requests (applies to both
+        // v2 and v3 version of he API).
         // See https://developers.google.com/drive/api/v3/batch
-
-        // Consider switching to API v2 if performance (or request rate) proves to be an issue here - it supports batch
-        // uploads
+        // See https://developers.google.com/drive/api/v2/batch
 
         if (topLevelFolderWithNameAbsent(targetFolder.name)) {
             throw IllegalArgumentException("Target folder ${targetFolder.name} does not exist")
