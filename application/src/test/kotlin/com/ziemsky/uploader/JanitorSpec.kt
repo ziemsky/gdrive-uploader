@@ -3,15 +3,11 @@ package com.ziemsky.uploader
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
 import com.ziemsky.uploader.model.repo.RepoFolderName
-import io.kotlintest.IsolationMode
 import io.kotlintest.shouldBe
-import io.kotlintest.specs.BehaviorSpec
 import java.time.LocalDate
 import java.util.*
 
-class JanitorSpec : BehaviorSpec() {
-
-    override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
+class JanitorSpec : UploaderAbstractBehaviourSpec() {
 
     private var fileRepo = RemoteRepoStub()
 

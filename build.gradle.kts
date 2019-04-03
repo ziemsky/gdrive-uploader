@@ -93,6 +93,10 @@ subprojects {
 
             // Spring Boot starters already add Hibernate Validator but in a slightly older version
             dependency("org.hibernate.validator:hibernate-validator:6.0.14.Final")
+
+            dependency("com.jakewharton.byteunits:byteunits:0.9.1")
+
+            dependency("org.apache.commons:commons-lang3:3.9")
         }
     }
 

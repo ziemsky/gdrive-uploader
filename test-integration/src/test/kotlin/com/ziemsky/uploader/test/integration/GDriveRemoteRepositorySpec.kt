@@ -26,7 +26,6 @@ class GDriveRemoteRepositorySpec(val drive: Drive,
                                  val testFixtures: TestFixtures,
                                  testDirectory: Path
 ) : BehaviorSpec() {
-
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
     lateinit var gDriveRemoteRepository: GDriveRemoteRepository

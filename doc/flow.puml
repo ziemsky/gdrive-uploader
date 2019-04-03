@@ -1,0 +1,179 @@
+@startuml
+
+title Service orchestrates the flow
+
+SpringIntegration -> Securer: secure(files)
+activate Securer
+
+Securer -> Securer: identifyDailyFolders(files):dailyFolders
+
+Securer -> FileRepo: identifyMissingFolders(dailyFolders)
+activate FileRepo
+loop [dailyFolders]
+    FileRepo -> GDriveClient: doesExist(folder):boolean
+end
+return missingDailyFolders
+
+Securer -> FileRepo: createMissingFolders(missingDailyFolders)
+activate FileRepo
+loop [missingDailyFolders]
+    FileRepo -> GDriveClient: create(missingDailyFolder)
+end
+deactivate
+
+Securer -> Securer: groupByDay(files):filesToDailyFolders
+
+loop [dailyFolders]
+    Securer -> FileRepo: upload(filesToDailyFolders[dailyFolder], dailyFolder):securedFiles
+end
+
+Securer -> SpringIntegration: acceptUploadedFiles(securedFiles)
+deactivate Securer
+
+SpringIntegration -> Cleanup: delete(securedFiles)
+
+Securer -> SpringIntegration: acceptFailedFiles(failedFiles)
+
+SpringIntegration -> Cleanup: requeue(failedFiles)
+
+@enduml
+
+
+
+
+@startuml
+
+title Spring Integration orchestrates the flow
+
+participant SpringIntegration
+participant RemoteLocationEnsurer
+participant FileRepo
+
+[-> RemoteLocationEnsurer: init
+RemoteLocationEnsurer -> FileRepo: getAllDailyFolders():remoteDailyFolders
+
+SpringIntegration -> Transformer: groupFilesByDays(files)
+return filesByDays:Map<LocalDate, File>
+
+SpringIntegration -> RemoteLocationEnsurer ++: ensureDailyFoldersFor(filesByDays)
+    RemoteLocationEnsurer -> RemoteLocationEnsurer : ensureRemoteDailyFoldersExist(filesByDays)
+        loop date in filesByDays.keys
+            opt dailyFolderMissingFor(date)
+                RemoteLocationEnsurer -> RemoteRepo: createFolder(dailyFolderFor(date))
+            end
+        end
+deactivate
+
+SpringIntegration -> Securer ++ : secure(filesByDays)
+    loop date in filesByDays.keys
+        alt upload ok
+            Securer -> FileRepo: upload(filesByDays[date], dailyFolderFor(date)):securedFiles
+            Securer -> SpringIntegration: acceptSecuredFiles(securedFiles)
+            ref over SpringIntegration
+                propagate secured files to
+                Cleanup for deletion
+            end
+        else upload failed
+'            Securer -> SpringIntegration: acceptFailedFiles(failedFiles)
+            ref over SpringIntegration
+                propagate failed files to
+                the incoming channel for retry,
+                incrementing retry count
+                (decrementing?)
+            end
+        end
+    end
+deactivate
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+
+@startuml
+title Spring Integration orchestrates the flow
+
+participant SpringIntegration
+participant Transformer
+participant DestinationPreparator
+participant Securer
+participant Janitor
+participant FileRepo
+
+
+== Cache Existing Remote Daily Folders ==
+
+DestinationPreparator <- SpringDi ++ : init
+    DestinationPreparator -> DestinationPreparator ++ : cacheExistingDailyFolders() : existingDailyFolders
+        DestinationPreparator -> FileRepo : getExistingDailyFolders() : existingDailyFolders
+    deactivate
+deactivate
+
+DestinationPreparator <- Scheduler ++ : cacheExistingDailyFolders() : existingDailyFolders
+    DestinationPreparator -> FileRepo : getExistingDailyFolders() : existingDailyFolders
+deactivate
+
+|||
+
+...
+== Secure current batch of files ==
+
+[-> SpringIntegration : dispatch\nnew batch of\nfiles found
+
+SpringIntegration -> Transformer ++ : groupByDates(filesToSecure)
+return datesToFiles : Map<LocalDate, File>
+
+|||
+
+SpringIntegration -> DestinationPreparator ++ : prepareDailyFoldersFor(datesToFiles)
+    DestinationPreparator -> FileRepo : createFolders(foldersFrom(datesToFiles.keys))
+return datesToFiles
+
+SpringIntegration -> Securer ++ : secure(datesToFiles)
+    loop date in datesToFiles.keys
+       Securer -> FileRepo : upload(filesToDays[date], dailyFolderFor(date)):securedFiles
+    end
+deactivate
+
+|||
+
+== Rotate Remote Daily Folders ==
+Janitor <- SpringDi : init(fileRepo, maxDailyFolders)
+...
+
+[-> SpringIntegration : batch of files\nfinished uploading
+SpringIntegration -> Janitor ++ : rotate(existingDailyFolders)
+    Janitor -> FileRepo : delete(expiredFolders)
+deactivate
+
+@enduml
+
+@startuml
+
+title Janitor rotating remote daily folders
+
+participant SpringIntegrationScheduler
+participant Janitor
+participant FileRepo
+participant SpringDi
+
+create Janitor
+SpringDi -> Janitor: new(maxDailyFoldersCount)
+
+SpringIntegrationScheduler -> Janitor: rotateDailyFolders()
+
+Janitor -> FileRepo: getDailyFolderCount(): dailyFolderCount
+
+    loop while dailyFolderCount > maxDailyFoldersCount
+        Janitor -> FileRepo: findOldestDailyFolder(): oldestDailyFolder
+        Janitor -> FileRepo: deleteFolderWithContent(oldestDailyFolder)
+    end
+
+@enduml

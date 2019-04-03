@@ -1,0 +1,25 @@
+@startuml
+
+title Stats logging sequence
+hide footbox
+
+participant StatsReporter
+participant StatsCalculator
+participant StatsLogger
+participant StatsLogRenderer
+participant Slf4j
+
+[-> StatsReporter: reportStats(Set<SecuredFileSummary>)
+
+StatsReporter -> StatsCalculator: calculateStats(Set<SecuredFileSummary>)
+return SecuredFilesBatchStats
+
+StatsReporter -> StatsLogger: log(SecuredFilesBatchStats)
+StatsLogger -> StatsLogRenderer: render(SecuredFilesBatchStats)
+return lines:Lines
+
+loop line in lines
+    StatsLogger -> Slf4j: log(line)
+end
+
+@enduml

@@ -14,18 +14,17 @@ import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.integration.annotation.Gateway
 import org.springframework.integration.annotation.IntegrationComponentScan
 import org.springframework.integration.annotation.MessagingGateway
 import org.springframework.integration.config.EnableIntegration
-import org.springframework.integration.dsl.ExecutorChannelSpec
-import org.springframework.integration.dsl.IntegrationFlow
-import org.springframework.integration.dsl.IntegrationFlows
-import org.springframework.integration.dsl.MessageChannels
+import org.springframework.integration.dsl.*
 import org.springframework.integration.dsl.Pollers.fixedDelay
 import org.springframework.integration.file.dsl.Files
 import org.springframework.integration.scheduling.PollerMetadata
 import java.io.File
 import java.nio.file.Paths
+import java.time.Clock
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -41,6 +40,32 @@ class UploaderConfig {
     // todo make the cameras rename the files to jpg after upload
     // to prevent files being picked up by uploader before they've been fully uploaded by
     // cameras
+
+
+
+    // inboundAdapter: file
+    //       |
+    //   transform(File): LocalFile
+    //       |
+    //    securer.ensureRemoteDailyFolder(LocalFile)  -  janitor.rotateRemoteDailyFolders()
+    //      | |
+    //      | | executor channel
+    //      | |
+    //    securer.secure(LocalFile)
+    //      | |
+    //      | |
+    //      | |
+    //    domainEventsNotifier.notifyFileSecured(LocalFile)
+    //      | |      | |
+    //      | |      | |
+    //      | |      | |
+    //      | |    janitor.cleanupSecuredLocalFile(LocalFile)
+    //      | |
+    //      | |
+    //    statsLogger.logStatsForSecuredFile(LocalFile)
+
+
+
 
     @Autowired
     lateinit var config: UploaderConfigProperties
@@ -75,28 +100,17 @@ class UploaderConfig {
 
                 .transform(File::class.java, ::LocalFile)
 
-                .handle<LocalFile> { payload, _ ->
-                    securer.ensureRemoteDailyFolder(payload)
-                    payload
+                .handle<LocalFile> { localFileToSecure, _ ->
+                    securer.ensureRemoteDailyFolder(localFileToSecure)
+                    localFileToSecure
                 }
 
                 .channel(executorChannel())
 
-                .handle<LocalFile> { payload, _ ->
-                    securer.secure(payload)
-                    payload // todo replace by event emitted by securer on successful upload or (at very least) received as a return value from securer.secure()
-                }
-
-                .handle<LocalFile> { payload, _ ->
-                    janitor.cleanupSecuredFile(payload)
-                }
+                .handle<LocalFile> { localFileToSecure, _ -> securer.secure(localFileToSecure) }
 
                 .nullChannel()
     }
-
-    @Bean
-    internal fun executorChannel(): ExecutorChannelSpec =
-            MessageChannels.executor(Executors.newFixedThreadPool(config.upload().maxConcurrentUploads()))
 
     @Bean
     internal fun rotateRemoteDailyFolders(
@@ -107,14 +121,59 @@ class UploaderConfig {
             .handle<RepoFolderName> { _, _ -> janitor.rotateRemoteDailyFolders() }
             .nullChannel()
 
-    @MessagingGateway(defaultRequestChannel = REMOTE_DAILY_FOLDER_CREATED_CHANNEL)
-    interface SecurerEventReporterGateway : SecurerEventReporter
+    @Bean
+    internal fun filesBatchAggregator(statsReporter: StatsReporter, janitor: Janitor): IntegrationFlow = IntegrationFlows
+            .from(SECURED_FILES_CHANNEL)
+
+            // Following https://stackoverflow.com/questions/36742888/spring-integration-java-dsl-configuration-of-aggregator
+            // Apparently, there is now scatterGather method which streamlines this flow
+            .publishSubscribeChannel {config -> config
+                    .subscribe { c ->
+                        c.aggregate { aggregatorSpec ->
+                            aggregatorSpec
+                                    .correlationStrategy { message -> true }
+                                    .releaseStrategy { group -> group.size() == STATS_BATCH_SIZE }
+                                    .groupTimeout(10000)
+                                    .sendPartialResultOnExpiry(true)
+                                    .expireGroupsUponCompletion(true)
+                        }
+                                .transform(List::class.java) { list -> list.toHashSet() }
+                                .handle<Set<SecuredFileSummary>> { securedLocalFiles, _ -> statsReporter.reportStatsForSecuredFiles(securedLocalFiles) }
+                                .nullChannel()
+                    }
+                    .subscribe { c -> c
+                            .handle<SecuredFileSummary> { securedLocalFile, _ -> janitor.cleanupSecuredFile(securedLocalFile.securedFile) }
+                            .nullChannel()
+                    }
+            }
+            .get()
+
+    @Bean
+    internal fun executorChannel(): ExecutorChannelSpec =
+            MessageChannels.executor(Executors.newFixedThreadPool(config.upload().maxConcurrentUploads()))
+
+    @Bean
+    internal fun securedFilesChannel(): QueueChannelSpec = MessageChannels.queue(SECURED_FILES_CHANNEL)
+
+    @Bean
+    internal fun statsReporter(): LoggingStatsReporter = LoggingStatsReporter(StatsCalculator(), Slf4jStatsLogger(HumanReadableStatsLogsRenderer()))
+
+    @MessagingGateway
+    interface DomainEventsNotifierSpringIntegrationGateway : DomainEventsNotifier { // todo move out of here
+
+        @Gateway(requestChannel = REMOTE_DAILY_FOLDER_CREATED_CHANNEL)
+        override fun notifyNewRemoteDailyFolderCreated(repoFolderName: RepoFolderName)
+
+        @Gateway(requestChannel = SECURED_FILES_CHANNEL)
+        override fun notifyFileSecured(securedFileSummary: SecuredFileSummary)
+    }
 
     @Bean
     internal fun securerService(
             remoteRepository: RemoteRepository,
-            @Suppress("SpringJavaInjectionPointsAutowiringInspection") securerEventReporter: SecurerEventReporter
-    ): Securer = Securer(remoteRepository, securerEventReporter)
+            @Suppress("SpringJavaInjectionPointsAutowiringInspection") domainEventsNotifier: DomainEventsNotifier,
+            clock: Clock
+    ): Securer = Securer(remoteRepository, domainEventsNotifier, clock)
 
     @Bean
     internal fun drive(config: UploaderConfigProperties): Drive {
@@ -150,6 +209,9 @@ class UploaderConfig {
                     .get()
 
     @Bean
+    internal fun clock() = Clock.systemDefaultZone()
+
+    @Bean
     internal fun pidWriter(): ApplicationListener<*> {
         val applicationPidFileWriter = ApplicationPidFileWriter()
         applicationPidFileWriter.setTriggerEventType(ApplicationReadyEvent::class.java)
@@ -161,8 +223,10 @@ class UploaderConfig {
     companion object {
 
         private val BATCH_SIZE = 4
+        private val STATS_BATCH_SIZE = 1000
 
-        private val LOCAL_FILES_TO_SECURE_CHANNEL = "localFilesToSecureChannel"
+        private const val SECURED_FILES_BATCHED_CHANNEL = "securedBatchedFilesChannel"
+        private const val SECURED_FILES_CHANNEL = "securedFilesChannel"
         private const val REMOTE_DAILY_FOLDER_CREATED_CHANNEL = "remoteDailyFolderCreatedChannel"
 
         private val POLLING_INTERVAL_IN_MILLIS = 100

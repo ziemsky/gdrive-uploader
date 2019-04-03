@@ -130,6 +130,7 @@ class UploaderSpec(
                    |and rotates the remote ones
                    |and deletes local original files
                    |and does not delete any other remote content""".trimMargin()) {
+                   // and logs stats?
 
                     // mix of freshly uploaded files and the remote rotation survivors
                     val remoteContentExpected = create(

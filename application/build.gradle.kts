@@ -38,6 +38,10 @@ dependencies {
 
     implementation("org.hibernate.validator:hibernate-validator")
 
+    implementation("com.jakewharton.byteunits:byteunits")
+
+    implementation("org.apache.commons:commons-lang3")
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     // Google Drive client

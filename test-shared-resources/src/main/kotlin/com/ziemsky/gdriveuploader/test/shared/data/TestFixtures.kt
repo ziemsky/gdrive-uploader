@@ -14,6 +14,10 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.collections.HashMap
+import kotlin.random.Random
 
 private val log = KotlinLogging.logger {}
 private val GOOGLE_DRIVE_FOLDER_MIMETYPE = "application/vnd.google-apps.folder"
@@ -23,33 +27,36 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         private val drive: Drive
 ) {
 
-    fun createLocalFilesWithDates(vararg testFilesInput: TestFilesInput): List<File> {
-
-        val createdFiles: MutableList<File> = mutableListOf()
-
-        testFilesInput.forEach { testFileInput ->
-            for (i in 1..testFileInput.count) {
-                val createdFile = Files.createFile(Paths.get(testDirectory.toString(), "${testFileInput.date}_${i}.jpg"))
-                createdFiles.add(createdFile.toFile())
-            }
+    fun clearTempDir() {
+        testDirectory.toFile().list().forEach { fileName ->
+            println ("file to delete: Paths.get(testDirectory.toAbsolutePath().toString(), fileName)")
         }
-
-        return createdFiles
     }
 
-    fun createRemoteFilesWithDates(vararg testFilesInput: TestFilesInput): List<File> {
+    fun createTestFilesFixtures(totalFilesCount: Int) {
+        // example file name: 20180909120000-02-front.jpg
+        (1..totalFilesCount)
+                .forEach { fileOrdinal ->
+                    val formattedTimeStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
 
-        val createdFiles: MutableList<File> = mutableListOf()
+                    val fileName = "$formattedTimeStamp-$fileOrdinal-front.jpg"
 
-        testFilesInput.forEach { testFileInput ->
-            for (i in 1..testFileInput.count) {
-                val createdFile = Files.createFile(Paths.get(testDirectory.toString(), "${testFileInput.date}_${i}.jpg"))
-                createdFiles.add(createdFile.toFile())
-            }
-        }
+                    createLocalFileWithRandomContent(fileName, 1024 * 1024)
 
-        return createdFiles
+                    println("created local file [$fileOrdinal]: $fileName")
+                }
     }
+
+
+    private fun createLocalFileWithRandomContent(name: String, lengthInBytes: Int): File {
+        val createdFile = Files.createFile(Paths.get(testDirectory.toString(), name)).toFile()
+
+        createdFile.writeBytes(randomBytes(lengthInBytes))
+
+        return createdFile
+    }
+
+    private fun randomBytes(count: Int) = Random.nextBytes(ByteArray(count))
 
     fun remoteStructure(): FsStructure {
         val root = drive.files().get("root").setFields("id").execute()

@@ -2,25 +2,27 @@ package com.ziemsky.uploader
 
 import com.ziemsky.uploader.model.local.LocalFile
 import com.ziemsky.uploader.model.repo.RepoFolder
-import io.kotlintest.IsolationMode
-import io.kotlintest.specs.BehaviorSpec
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.io.File
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
-class SecurerSpec : BehaviorSpec() {
-    override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
+class SecurerSpec : UploaderAbstractBehaviourSpec() {
 
     init {
 
         Given("A file to secure") {
 
             val remoteRepository: RemoteRepository = mockk(relaxed = true)
-            val securerEventReporter: SecurerEventReporter = mockk(relaxed = true)
+            val domainEventsNotifier: DomainEventsNotifier = mockk(relaxed = true)
 
-            val service = Securer(remoteRepository, securerEventReporter)
+            val clock = Clock.fixed(Instant.parse("2019-08-19T20:33:00Z"), ZoneId.of("UTC"))
+
+            val securer = Securer(remoteRepository, domainEventsNotifier, clock)
 
             val localFile = LocalFile(File("20180901120000-00-front.jpg"))
 
@@ -29,11 +31,21 @@ class SecurerSpec : BehaviorSpec() {
 
             When("securing file") {
 
-                service.secure(localFile)
+                securer.secure(localFile)
 
-                Then("file gets secured in the repository in corresponding daily folder") {
+                Then("""file gets secured in the repository in corresponding daily folder
+                    |and secured file gets reported
+                """.trimMargin()) {
+
+
+                    val expectedSecuredFileSummary = SecuredFileSummary(
+                            uploadStart = clock.instant(),
+                            uploadEnd = clock.instant(),
+                            securedFile = localFile
+                    )
 
                     verify { remoteRepository.upload(dailyFolder, localFile) }
+                    verify { domainEventsNotifier.notifyFileSecured(expectedSecuredFileSummary) }
                 }
             }
 
@@ -45,7 +57,7 @@ class SecurerSpec : BehaviorSpec() {
 
                 When("asked to ensure daily folder available in the repository for the file") {
 
-                    service.ensureRemoteDailyFolder(localFile)
+                    securer.ensureRemoteDailyFolder(localFile)
 
                     Then("""daily folder gets created
                         |and the creation of the folder gets reported
@@ -53,7 +65,7 @@ class SecurerSpec : BehaviorSpec() {
 
                         verifyOrder {
                             remoteRepository.createFolderWithName(dailyFolder.name)
-                            securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
+                            domainEventsNotifier.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
                         }
                     }
                 }
@@ -66,13 +78,13 @@ class SecurerSpec : BehaviorSpec() {
 
                 When("asked to ensure daily folder available in the repository for the file") {
 
-                    service.ensureRemoteDailyFolder(localFile)
+                    securer.ensureRemoteDailyFolder(localFile)
 
                     Then("""no folder creation is attempted
                         |and no event gets emitted""".trimMargin()) {
 
                         verify(exactly = 0) { remoteRepository.createFolderWithName(any()) }
-                        verify(exactly = 0) { securerEventReporter.notifyNewRemoteDailyFolderCreated(any()) }
+                        verify(exactly = 0) { domainEventsNotifier.notifyNewRemoteDailyFolderCreated(any()) }
                     }
                 }
             }

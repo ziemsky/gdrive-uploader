@@ -9,9 +9,11 @@ data class LocalFile(val file: File) {
 
     val date: LocalDate = dateFromFileName(file)
 
-    val path: Path get() = file.toPath()
+    val path: Path = file.toPath()
 
-    val name: FileName get() = FileName(file.name)
+    val name: FileName = FileName(file.name)
+
+    val sizeInBytes: Long = file.length()
 
     companion object {
 
