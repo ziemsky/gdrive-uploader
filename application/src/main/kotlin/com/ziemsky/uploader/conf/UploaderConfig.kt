@@ -14,13 +14,11 @@ import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.integration.annotation.Gateway
 import org.springframework.integration.annotation.IntegrationComponentScan
 import org.springframework.integration.annotation.MessagingGateway
 import org.springframework.integration.config.EnableIntegration
-import org.springframework.integration.dsl.ExecutorChannelSpec
-import org.springframework.integration.dsl.IntegrationFlow
-import org.springframework.integration.dsl.IntegrationFlows
-import org.springframework.integration.dsl.MessageChannels
+import org.springframework.integration.dsl.*
 import org.springframework.integration.dsl.Pollers.fixedDelay
 import org.springframework.integration.file.dsl.Files
 import org.springframework.integration.scheduling.PollerMetadata
@@ -41,6 +39,32 @@ class UploaderConfig {
     // todo make the cameras rename the files to jpg after upload
     // to prevent files being picked up by uploader before they've been fully uploaded by
     // cameras
+
+
+
+    // inboundAdapter: file
+    //       |
+    //   transform(File): LocalFile
+    //       |
+    //    securer.ensureRemoteDailyFolder(LocalFile)  -  janitor.rotateRemoteDailyFolders()
+    //      | |
+    //      | | executor channel
+    //      | |
+    //    securer.secure(LocalFile)
+    //      | |
+    //      | |
+    //      | |
+    //    securerEventReporter.notifyFileSecured(LocalFile)
+    //      | |      | |
+    //      | |      | |
+    //      | |      | |
+    //      | |    janitor.cleanupSecuredLocalFile(LocalFile)
+    //      | |
+    //      | |
+    //    statsLogger.logStatsForSecuredFile(LocalFile)
+
+
+
 
     @Autowired
     lateinit var config: UploaderConfigProperties
@@ -75,28 +99,17 @@ class UploaderConfig {
 
                 .transform(File::class.java, ::LocalFile)
 
-                .handle<LocalFile> { payload, _ ->
-                    securer.ensureRemoteDailyFolder(payload)
-                    payload
+                .handle<LocalFile> { localFileToSecure, _ ->
+                    securer.ensureRemoteDailyFolder(localFileToSecure)
+                    localFileToSecure
                 }
 
                 .channel(executorChannel())
 
-                .handle<LocalFile> { payload, _ ->
-                    securer.secure(payload)
-                    payload // todo replace by event emitted by securer on successful upload or (at very least) received as a return value from securer.secure()
-                }
-
-                .handle<LocalFile> { payload, _ ->
-                    janitor.cleanupSecuredFile(payload)
-                }
+                .handle<LocalFile> { localFileToSecure, _ -> securer.secure(localFileToSecure) }
 
                 .nullChannel()
     }
-
-    @Bean
-    internal fun executorChannel(): ExecutorChannelSpec =
-            MessageChannels.executor(Executors.newFixedThreadPool(config.upload().maxConcurrentUploads()))
 
     @Bean
     internal fun rotateRemoteDailyFolders(
@@ -107,14 +120,62 @@ class UploaderConfig {
             .handle<RepoFolderName> { _, _ -> janitor.rotateRemoteDailyFolders() }
             .nullChannel()
 
-    @MessagingGateway(defaultRequestChannel = REMOTE_DAILY_FOLDER_CREATED_CHANNEL)
-    interface SecurerEventReporterGateway : SecurerEventReporter
+//    @Bean
+//    internal fun cleanupLocalSecuredFiles(janitor: Janitor): IntegrationFlow = IntegrationFlows
+//                .from(SECURED_FILES_BATCHED_CHANNEL)
+//                .handle<LocalFile> { securedLocalFile, _ -> janitor.cleanupSecuredFile(securedLocalFile) }
+//                .nullChannel()
+//
+//    @Bean
+//    internal fun logStats(statsLogger: StatsLogger): IntegrationFlow = IntegrationFlows
+//            .from(SECURED_FILES_BATCHED_CHANNEL)
+//            .handle<LocalFile> { securedLocalFile, _ -> statsLogger.logStatsForSecuredFile(securedLocalFile) }
+//            .nullChannel()
+
+    @Bean
+    internal fun filesBatchAggregator(statsLogger: StatsLogger, janitor: Janitor): IntegrationFlow = IntegrationFlows
+            .from(SECURED_FILES_CHANNEL)
+
+            .publishSubscribeChannel {config -> config
+                    .subscribe{ c -> c
+                            .handle<LocalFile> { securedLocalFile, _ -> statsLogger.logStatsForSecuredFile(securedLocalFile) }
+                            .nullChannel()
+                    }
+                    .subscribe{ c -> c
+                            .handle<LocalFile> { securedLocalFile, _ -> janitor.cleanupSecuredFile(securedLocalFile) }
+                            .nullChannel()
+                    }
+            }
+            .get()
+
+    @Bean
+    internal fun executorChannel(): ExecutorChannelSpec =
+            MessageChannels.executor(Executors.newFixedThreadPool(config.upload().maxConcurrentUploads()))
+
+    @Bean
+    internal fun securedFilesChannel(): QueueChannelSpec = MessageChannels.queue(SECURED_FILES_CHANNEL)
+
+//    @Bean
+//    internal fun securedFilesBatchedChannel(): PublishSubscribeChannelSpec<*>? = MessageChannels.publishSubscribe(SECURED_FILES_BATCHED_CHANNEL)
+
+    @Bean
+    internal fun statsLogger(): StatsLogger = StatsLogger()
+
+    @MessagingGateway
+    interface EventBusGateway : EventBus {
+
+        @Gateway(requestChannel = REMOTE_DAILY_FOLDER_CREATED_CHANNEL)
+        override fun notifyNewRemoteDailyFolderCreated(repoFolderName: RepoFolderName)
+
+        @Gateway(requestChannel = SECURED_FILES_CHANNEL)
+        override fun notifyFileSecured(localFile: LocalFile)
+    }
 
     @Bean
     internal fun securerService(
             remoteRepository: RemoteRepository,
-            @Suppress("SpringJavaInjectionPointsAutowiringInspection") securerEventReporter: SecurerEventReporter
-    ): Securer = Securer(remoteRepository, securerEventReporter)
+            @Suppress("SpringJavaInjectionPointsAutowiringInspection") eventBus: EventBus
+    ): Securer = Securer(remoteRepository, eventBus)
 
     @Bean
     internal fun drive(config: UploaderConfigProperties): Drive {
@@ -162,7 +223,8 @@ class UploaderConfig {
 
         private val BATCH_SIZE = 4
 
-        private val LOCAL_FILES_TO_SECURE_CHANNEL = "localFilesToSecureChannel"
+        private const val SECURED_FILES_BATCHED_CHANNEL = "securedBatchedFilesChannel"
+        private const val SECURED_FILES_CHANNEL = "securedFilesChannel"
         private const val REMOTE_DAILY_FOLDER_CREATED_CHANNEL = "remoteDailyFolderCreatedChannel"
 
         private val POLLING_INTERVAL_IN_MILLIS = 100

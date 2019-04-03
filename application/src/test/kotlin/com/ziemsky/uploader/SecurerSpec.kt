@@ -18,9 +18,9 @@ class SecurerSpec : BehaviorSpec() {
         Given("A file to secure") {
 
             val remoteRepository: RemoteRepository = mockk(relaxed = true)
-            val securerEventReporter: SecurerEventReporter = mockk(relaxed = true)
+            val eventBus: EventBus = mockk(relaxed = true)
 
-            val service = Securer(remoteRepository, securerEventReporter)
+            val service = Securer(remoteRepository, eventBus)
 
             val localFile = LocalFile(File("20180901120000-00-front.jpg"))
 
@@ -31,9 +31,12 @@ class SecurerSpec : BehaviorSpec() {
 
                 service.secure(localFile)
 
-                Then("file gets secured in the repository in corresponding daily folder") {
+                Then("""file gets secured in the repository in corresponding daily folder
+                    |and secured file gets reported
+                """.trimMargin()) {
 
                     verify { remoteRepository.upload(dailyFolder, localFile) }
+                    verify { eventBus.notifyFileSecured(localFile) }
                 }
             }
 
@@ -53,7 +56,7 @@ class SecurerSpec : BehaviorSpec() {
 
                         verifyOrder {
                             remoteRepository.createFolderWithName(dailyFolder.name)
-                            securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
+                            eventBus.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
                         }
                     }
                 }
@@ -72,7 +75,7 @@ class SecurerSpec : BehaviorSpec() {
                         |and no event gets emitted""".trimMargin()) {
 
                         verify(exactly = 0) { remoteRepository.createFolderWithName(any()) }
-                        verify(exactly = 0) { securerEventReporter.notifyNewRemoteDailyFolderCreated(any()) }
+                        verify(exactly = 0) { eventBus.notifyNewRemoteDailyFolderCreated(any()) }
                     }
                 }
             }
