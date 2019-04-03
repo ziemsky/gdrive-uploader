@@ -9,7 +9,7 @@ private val log = KotlinLogging.logger {}
 
 class Securer(
         private val remoteRepository: RemoteRepository,
-        private val securerEventReporter: SecurerEventReporter
+        private val eventBus: EventBus
 ) {
 
     fun secure(localFile: LocalFile) {
@@ -19,6 +19,8 @@ class Securer(
         val dailyRepoFolder = RepoFolder.from(localFile.date)
 
         remoteRepository.upload(dailyRepoFolder, localFile)
+
+        eventBus.notifyFileSecured(localFile)
     }
 
 
@@ -29,7 +31,7 @@ class Securer(
         if (remoteRepository.topLevelFolderWithNameAbsent(dailyRepoFolderName)) {
             remoteRepository.createFolderWithName(dailyRepoFolderName)
             log.debug { "Created folder $dailyRepoFolderName" }
-            securerEventReporter.notifyNewRemoteDailyFolderCreated(dailyRepoFolderName)
+            eventBus.notifyNewRemoteDailyFolderCreated(dailyRepoFolderName)
         }
 
     }
