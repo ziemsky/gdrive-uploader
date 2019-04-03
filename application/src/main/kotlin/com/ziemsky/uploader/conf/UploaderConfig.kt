@@ -132,10 +132,18 @@ class UploaderConfig {
 //            .handle<LocalFile> { securedLocalFile, _ -> statsLogger.logStatsForSecuredFile(securedLocalFile) }
 //            .nullChannel()
 
+//    @Bean
+//    internal fun sg(): IntegrationFlow {
+//        return IntegrationFlowBuilder()
+//    }
+
+
     @Bean
     internal fun filesBatchAggregator(statsLogger: StatsLogger, janitor: Janitor): IntegrationFlow = IntegrationFlows
             .from(SECURED_FILES_CHANNEL)
 
+            // Following https://stackoverflow.com/questions/36742888/spring-integration-java-dsl-configuration-of-aggregator
+            // Apparently, there is now scatterGather method which streamlines this flow
             .publishSubscribeChannel {config -> config
                     .subscribe{ c -> c
                             .handle<LocalFile> { securedLocalFile, _ -> statsLogger.logStatsForSecuredFile(securedLocalFile) }
