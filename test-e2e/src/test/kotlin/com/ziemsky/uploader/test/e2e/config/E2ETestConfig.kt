@@ -1,29 +1,26 @@
-package com.ziemsky.uploader.test.integration.config
+package com.ziemsky.uploader.test.e2e.config
 
-import com.google.api.services.drive.Drive
 import com.typesafe.config.ConfigBeanFactory
 import com.typesafe.config.ConfigFactory
-import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveProvider
 import com.ziemsky.uploader.test.shared.data.TestFixtures
 import com.ziemsky.uploader.test.shared.data.TestGDriveProvider
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.nio.file.Files
 import java.nio.file.Path
 
 private val log = KotlinLogging.logger {}
 
 @Configuration
-class IntegrationTestConfig {
+class E2ETestConfig {
 
     @Bean
     fun testProperties(
-            @Value("\${conf.path}/test-integration.conf") configFilePath: Path,
+            @Value("\${conf.path}/test-e2e.conf") configFilePath: Path,
             @Value("\${conf.path}") confPath: String
     ): TestProperties {
-
+        // todo cleanup, remove duplication with IntegrationTestConfig
         val config = ConfigFactory
                 .parseFile(configFilePath.toFile())
                 .resolveWith(
@@ -41,15 +38,12 @@ class IntegrationTestConfig {
     }
 
     @Bean
-    fun testDirectory(): Path? {
-        val testDirectory = Files.createTempDirectory("UploaderIntegrationTest_")
-        log.info {"Created temporary directory for test content: $testDirectory" }
+    fun testDataService(
+            @Value("\${test.e2e.uploader.monitoring.path}") testDirectory: Path,
+            config: TestProperties
+    ): TestFixtures {
 
-        return testDirectory
-    }
-
-    @Bean
-    fun testData(testDirectory: Path, config: TestProperties): TestFixtures {
+        log.info { "Using test data from directory: '$testDirectory'" }
 
         val drive = TestGDriveProvider(
                 config.applicationUserName(),
@@ -59,15 +53,5 @@ class IntegrationTestConfig {
         ).drive()
 
         return TestFixtures(testDirectory, drive)
-    }
-
-    @Bean
-    internal fun drive(config: TestProperties): Drive {
-        return GDriveProvider(
-                config.applicationUserName(),
-                config.tokensDirectory(),
-                config.credentialsFile(),
-                config.applicationName()
-        ).drive()
     }
 }

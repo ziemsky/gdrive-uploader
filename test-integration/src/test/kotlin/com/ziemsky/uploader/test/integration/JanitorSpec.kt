@@ -2,10 +2,10 @@ package com.ziemsky.uploader.test.integration
 
 import com.ziemsky.fsstructure.FsStructure.create
 import com.ziemsky.fsstructure.FsStructure.fle
-import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
-import com.ziemsky.uploader.Janitor
-import com.ziemsky.uploader.model.local.LocalFile
+import com.ziemsky.uploader.securing.Janitor
+import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
+import com.ziemsky.uploader.test.shared.data.TestFixtures
 import io.kotlintest.Spec
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.BehaviorSpec

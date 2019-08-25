@@ -2,24 +2,21 @@ package com.ziemsky.uploader.test.integration
 
 import com.google.api.services.drive.Drive
 import com.ziemsky.fsstructure.FsStructure.*
-import com.ziemsky.gdriveuploader.test.shared.data.TestFixtures
-import com.ziemsky.uploader.GDriveRemoteRepository
-import com.ziemsky.uploader.model.local.LocalFile
-import com.ziemsky.uploader.model.repo.RepoFolder
-import com.ziemsky.uploader.model.repo.RepoFolderName
+import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveRemoteRepository
+import com.ziemsky.uploader.securing.model.local.LocalFile
+import com.ziemsky.uploader.securing.model.remote.RemoteFolder
+import com.ziemsky.uploader.securing.model.remote.RemoteFolderName
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
+import com.ziemsky.uploader.test.shared.data.TestFixtures
 import io.kotlintest.IsolationMode
 import io.kotlintest.assertSoftly
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldThrow
 import io.kotlintest.specs.BehaviorSpec
-import mu.KotlinLogging
 import org.springframework.test.context.ContextConfiguration
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDate
-
-private val log = KotlinLogging.logger {}
 
 @ContextConfiguration(classes = [(IntegrationTestConfig::class)])
 class GDriveRemoteRepositorySpec(val drive: Drive,
@@ -37,7 +34,7 @@ class GDriveRemoteRepositorySpec(val drive: Drive,
             val testFileName = "20180901120000-00-front.jpg"
 
 
-            val targetFolder = RepoFolder.from(LocalDate.of(2018, 9, 1))
+            val targetFolder = RemoteFolder.from(LocalDate.of(2018, 9, 1))
 
             val expectedStructure = create(
                     dir("2018-09-01",
@@ -122,7 +119,7 @@ class GDriveRemoteRepositorySpec(val drive: Drive,
 
                     Then("retrieves and caches existing remote daily folders") {
                         gDriveRemoteRepository.dailyFolderCount() shouldBe 3
-                        gDriveRemoteRepository.findOldestDailyFolder() shouldBe RepoFolder.from(LocalDate.parse("2018-09-01"))
+                        gDriveRemoteRepository.findOldestDailyFolder() shouldBe RemoteFolder.from(LocalDate.parse("2018-09-01"))
                     }
                 }
 
@@ -132,19 +129,19 @@ class GDriveRemoteRepositorySpec(val drive: Drive,
                     When("checking whether an absent top level folder with given name does not exists") {
 
                         Then("reports that it does not exist") {
-                            gDriveRemoteRepository.topLevelFolderWithNameAbsent(RepoFolderName.from("2021-12-10")) shouldBe true
+                            gDriveRemoteRepository.topLevelFolderWithNameAbsent(RemoteFolderName.from("2021-12-10")) shouldBe true
                         }
                     }
 
                     When("checking whether an existing top level folder with given name does not exists") {
 
                         Then("reports that it does exist") {
-                            gDriveRemoteRepository.topLevelFolderWithNameAbsent(RepoFolderName.from("2018-09-01")) shouldBe false
+                            gDriveRemoteRepository.topLevelFolderWithNameAbsent(RemoteFolderName.from("2018-09-01")) shouldBe false
                         }
                     }
 
                     When("creating new daily folder with given name") {
-                        gDriveRemoteRepository.createFolderWithName(RepoFolderName.from("2020-12-10"))
+                        gDriveRemoteRepository.createFolderWithName(RemoteFolderName.from("2020-12-10"))
 
                         Then("""new remote folder gets created alongside existing ones
                             |and it gets added to the local cache
@@ -168,7 +165,7 @@ class GDriveRemoteRepositorySpec(val drive: Drive,
                                     fle("mis-matching top-level file")
                             )
 
-                            gDriveRemoteRepository.topLevelFolderWithNameAbsent(RepoFolderName.from("2020-12-10")) shouldBe false
+                            gDriveRemoteRepository.topLevelFolderWithNameAbsent(RemoteFolderName.from("2020-12-10")) shouldBe false
                         }
                     }
                 }
@@ -211,19 +208,19 @@ class GDriveRemoteRepositorySpec(val drive: Drive,
             When("asked for finding oldest daily folder") {
 
                 Then("returns the oldest of the existing daily folders") {
-                    gDriveRemoteRepository.findOldestDailyFolder() shouldBe RepoFolder.from(LocalDate.parse("2018-09-01"))
+                    gDriveRemoteRepository.findOldestDailyFolder() shouldBe RemoteFolder.from(LocalDate.parse("2018-09-01"))
                 }
             }
 
             When("asked to removed an existing folder") {
 
-                gDriveRemoteRepository.deleteFolder(RepoFolder.from(LocalDate.parse("2018-09-01")))
+                gDriveRemoteRepository.deleteFolder(RemoteFolder.from(LocalDate.parse("2018-09-01")))
 
                 Then("deletes requested folder with its content, leaving other content intact, and updates local cache") {
 
                     assertSoftly {
                         gDriveRemoteRepository.dailyFolderCount() shouldBe 2
-                        gDriveRemoteRepository.findOldestDailyFolder() shouldBe RepoFolder.from(LocalDate.parse("2018-09-02"))
+                        gDriveRemoteRepository.findOldestDailyFolder() shouldBe RemoteFolder.from(LocalDate.parse("2018-09-02"))
 
                         testFixtures.remoteStructure() shouldBe create(
                                 dir("2018-09-02",
