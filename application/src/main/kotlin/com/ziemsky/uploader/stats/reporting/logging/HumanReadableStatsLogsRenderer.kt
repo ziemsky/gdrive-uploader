@@ -10,14 +10,14 @@ class HumanReadableStatsLogsRenderer : StatsLogRenderer {
 
     override fun render(securedFilesBatchStats: SecuredFilesBatchStats): List<Line> {
         return arrayOf(
-                "---------------------------------------",
+                "-------------------------------------------",
                 "   Secured files: ${securedFilesBatchStats.filesCount}",
                 " Upload duration: ${formatDuration(securedFilesBatchStats.duration)}",
                 "     Upload size: ${formatByteSize(securedFilesBatchStats.totalFilesSizeInBytes)}",
                 "    Upload speed: ${formatByteSize(securedFilesBatchStats.securedBytesPerSec)}/s",
                 "    Upload start: ${securedFilesBatchStats.start}",
                 "      Upload end: ${securedFilesBatchStats.end}",
-                "---------------------------------------"
+                "-------------------------------------------"
         )
                 .map { rawLine -> Line(rawLine) }
     }

@@ -54,11 +54,13 @@ subprojects {
         // sub-projects rather than here.
 
         dependencies {
-            dependencySet("org.jetbrains.kotlin:1.3.21") { // todo tie to the one in settings file
+            dependencySet("org.jetbrains.kotlin:1.3.50") { // todo tie to the one in settings file
                 entry("kotlin-stdlib-jdk8")
                 entry("kotlin-stdlib")
                 entry("kotlin-reflect")
             }
+
+            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0")
 
             dependencySet("org.springframework:5.1.5.RELEASE") {
                 entry("spring-web")

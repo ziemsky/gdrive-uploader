@@ -147,5 +147,10 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         var maxConcurrentUploads: Int = 2
 
         override fun maxConcurrentUploads(): Int = maxConcurrentUploads
+        override fun toString(): String {
+            return "UploadProperties(maxConcurrentUploads=$maxConcurrentUploads)"
+        }
+
+
     }
 }

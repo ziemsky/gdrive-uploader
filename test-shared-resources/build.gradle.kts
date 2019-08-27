@@ -4,6 +4,8 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+
     implementation("org.awaitility:awaitility-kotlin") {
         exclude(group = "org.jetbrains.kotlin")
     }

@@ -4,8 +4,8 @@ import com.google.api.services.drive.Drive
 import com.typesafe.config.ConfigBeanFactory
 import com.typesafe.config.ConfigFactory
 import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveProvider
+import com.ziemsky.uploader.test.shared.TestGDriveProvider
 import com.ziemsky.uploader.test.shared.data.TestFixtures
-import com.ziemsky.uploader.test.shared.data.TestGDriveProvider
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean

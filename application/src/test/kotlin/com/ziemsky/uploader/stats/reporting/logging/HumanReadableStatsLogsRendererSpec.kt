@@ -35,14 +35,14 @@ class HumanReadableStatsLogsRendererSpec : UploaderAbstractBehaviourSpec() {
 
                     // @formatter:off
                     actualRenderedLinesText shouldBe """
-                        ---------------------------------------
+                        -------------------------------------------
                            Secured files: 3
                          Upload duration: 00:01:01.000
                              Upload size: 58.6 KiB
                             Upload speed: 983 B/s
                             Upload start: 2019-08-18T19:10:00Z
                               Upload end: 2019-08-18T19:11:01Z
-                        ---------------------------------------
+                        -------------------------------------------
                         """.trimIndent()
                     // @formatter:on
                 }
