@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import org.springframework.validation.annotation.Validated
 import java.nio.file.Path
+import java.time.Duration
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Positive
@@ -22,7 +23,10 @@ interface UploaderConfigProperties {
 }
 
 interface Upload {
+
     fun maxConcurrentUploads(): Int
+
+    fun retryTimeout(): Duration
 }
 
 interface Monitoring {
@@ -146,11 +150,14 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         @Positive
         var maxConcurrentUploads: Int = 2
 
+        var retryTimeout: Duration = Duration.ofMinutes(5)
+
         override fun maxConcurrentUploads(): Int = maxConcurrentUploads
+
+        override fun retryTimeout(): Duration = retryTimeout
+
         override fun toString(): String {
-            return "UploadProperties(maxConcurrentUploads=$maxConcurrentUploads)"
+            return "UploadProperties(maxConcurrentUploads=$maxConcurrentUploads, retryTimeout=$retryTimeout)"
         }
-
-
     }
 }

@@ -232,6 +232,19 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         return FsStructure.readFrom(testDirectory)
     }
 
+    fun findTopLevelFolderIdByName(folderName: String): String? = retryOnUsageLimitsException { // todo return folder object
+        drive
+                // https://developers.google.com/drive/api/v3/search-parameters
+                .files()
+                .list()
+                .setSpaces("drive")
+                .setQ("mimeType='$GOOGLE_DRIVE_FOLDER_MIMETYPE' and 'root' in parents and name = '$folderName'")
+                .execute()
+                .files
+                .first()
+                .id
+    }
+
     private fun <R> retryOnUsageLimitsException(action: () -> R): R = RetryingExecutor.retryOnException(
             action = action,
             timeOut = Duration.ofSeconds(10),

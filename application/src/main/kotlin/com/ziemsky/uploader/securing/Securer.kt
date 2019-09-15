@@ -37,7 +37,7 @@ class Securer(
         val dailyRepoFolderName = RemoteFolderName.from(localFile.date)
 
         if (remoteRepository.topLevelFolderWithNameAbsent(dailyRepoFolderName)) {
-            remoteRepository.createFolderWithName(dailyRepoFolderName)
+            remoteRepository.createTopLevelFolder(dailyRepoFolderName)
             log.debug { "Created folder $dailyRepoFolderName" }
             domainEventsNotifier.notifyNewRemoteDailyFolderCreated(dailyRepoFolderName)
         }

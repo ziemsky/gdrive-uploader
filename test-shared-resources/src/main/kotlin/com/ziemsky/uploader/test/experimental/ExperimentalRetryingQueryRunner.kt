@@ -12,23 +12,26 @@ import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.pow
 
-
+/**
+ * Google APIs impose request rate limits.
+ *
+ * This class is a test bed for experiments with various approaches to dealing with these limits.
+ */
 class ExperimentalRetryingQueryRunner(private val drive: Drive) {
     private val log = KotlinLogging.logger {}
 
     private val executorCoroutineDispatcher = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1).asCoroutineDispatcher()
 
+    fun executeQueriesInParallel(requiredQueriesCount: Int) {
 
-    fun executeParallelQueries(times: Int) {
-
-        log.debug { "Before launching $times queries" }
+        log.debug { "Before launching $requiredQueriesCount queries" }
 
         val timeStartAllQueries = Instant.now()
 
         executorCoroutineDispatcher.use {
 
             var tasks = runBlocking {
-                (1..times).map { async { querySingleSuspending(it, executorCoroutineDispatcher) } }
+                (1..requiredQueriesCount).map { async { querySingleSuspending(it, executorCoroutineDispatcher) } }
             }
 
             val completedQueries = tasks.filter { deferred -> deferred.isCompleted }
@@ -39,7 +42,8 @@ class ExperimentalRetryingQueryRunner(private val drive: Drive) {
                     .filter { queryStatus -> queryStatus.equals(QueryStatus.FAILURE) }
                     .count()
 
-            log.debug { "Completed $completedQueriesCount out of $times queries with $failedCompletedQueriesCount failed; in ${Duration.between(timeStartAllQueries, Instant.now())}" }
+            val totalDuration = Duration.between(timeStartAllQueries, Instant.now())
+            log.debug { "Completed $completedQueriesCount out of $requiredQueriesCount queries with $failedCompletedQueriesCount failed, in $totalDuration. Count of queries completed per sec: ${completedQueriesCount / totalDuration.seconds}" }
         }
     }
 
@@ -48,25 +52,23 @@ class ExperimentalRetryingQueryRunner(private val drive: Drive) {
         FAILURE
     }
 
-    private suspend fun querySingleSuspending(i: Int, coroutineDispatcher: ExecutorCoroutineDispatcher): QueryStatus = withContext(coroutineDispatcher) {
+    private suspend fun querySingleSuspending(queryOrdinal: Int, coroutineDispatcher: ExecutorCoroutineDispatcher): QueryStatus = withContext(coroutineDispatcher) {
         val timeStartSingleQuery = Instant.now()
 
-        log.debug { "query [$i] start" }
+        log.debug { "query [$queryOrdinal] start" }
 
         var queryStatus: QueryStatus = QueryStatus.FAILURE
 
         try {
-            // result = drive.files().get("root").setFields("id").execute()
-            // val result = drive.about().get().setFields("kind").execute()
             queryWithBackoff()
 
             queryStatus = QueryStatus.SUCCESS
 
         } catch (e: Exception) {
-            log.error(e) { "query [$i] failed" }
+            log.error(e) { "query [$queryOrdinal] failed" }
         }
 
-        log.debug { "query [$i] completed in ${Duration.between(timeStartSingleQuery, Instant.now())} with $queryStatus" }
+        log.debug { "query [$queryOrdinal] completed in ${Duration.between(timeStartSingleQuery, Instant.now())} with $queryStatus" }
 
         queryStatus
     }
@@ -92,13 +94,17 @@ class ExperimentalRetryingQueryRunner(private val drive: Drive) {
     }
 
 
-    // todo default request rate, to minimise getting exception to begin with
-    // todo block parallel requests
-
     private val retryLock: Lock = ReentrantLock()
 
     private val initialRetryWaitInMillis = 200
 
+    /**
+     * This method is an abandoned attempt to reduce the number of threads performing retries concurrently.
+     *
+     * As is, it introduced unacceptable delays and further exploration was deemed not worth the effort.
+     *
+     * @Deprecated use [retryOnException] instead.
+     */
     private fun retryOnExceptionReduceNumberOfRetryingThreads(
             action: () -> Unit,
             isRetryableExceptionPredicate: (Throwable) -> Boolean,
@@ -173,48 +179,18 @@ class ExperimentalRetryingQueryRunner(private val drive: Drive) {
         throwable?.let { throw it }
     }
 
-    private fun retryOnException(
-            action: () -> Unit,
-            isRetryableExceptionPredicate: (Throwable) -> Boolean,
-            maxRetryCount: Int,
-            timeOut: Duration,
-            actionOnExpiration: () -> Unit
-    ) {
-        var nextAttemptDelay = Duration.of(0, ChronoUnit.SECONDS)
-
-        var throwable: Throwable? = null
-
-        for (attemptNumber in 1..maxRetryCount) {
-
-            log.info { "attempt $attemptNumber" }
-
-            runBlocking {
-                log.info("Delaying attempt $attemptNumber by $nextAttemptDelay")
-                delay(nextAttemptDelay.toMillis())
-
-                nextAttemptDelay = Duration.ofMillis(initialRetryWaitInMillis * (2.0.pow(attemptNumber) - 1).toLong())
-            }
-
-            val result: Result<Unit> = runCatching(action)
-
-            if (result.isSuccess) {
-                break // success - we're done
-
-            } else {
-
-                if (isRetryableExceptionPredicate.invoke(result.exceptionOrNull()!!)) {
-                    log.error { "Retryable exception caught" }
-                    continue // retryable exception was thrown - continue with next attempt
-                } else {
-                    throwable = result.exceptionOrNull()!!
-                    break // non-retryable exception was thrown - stop retrying
-                }
-            }
-        }
-
-        throwable?.let { throw it }
-    }
-
+    /**
+     * Retries given [action] when exception that fulfils [isRetryableExceptionPredicate] is received.
+     * Keeps trying until [timeOut] occurs, at which point it invokes [actionOnExpiration].
+     * Subsequent retries are performed with increasing delays, following exponential back-off pattern.
+     *
+     * Takes no account of other threads that may be executing the same [action] in parallel and makes no effort to
+     * ensure that only one thread performs the retries.
+     *
+     * When used to deal with `userRateLimitExceeded` error of Google API, it achieves request rate very closely
+     * approaching the quota: tests indicated rate of 9 successful requests per second with quota of 10 requests per
+     * second.
+     */
     private fun retryOnException(
             action: () -> Unit,
             isRetryableExceptionPredicate: (Throwable) -> Boolean,

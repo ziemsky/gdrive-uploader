@@ -12,9 +12,9 @@ interface RemoteRepository { // todo rename
 
     fun findOldestDailyFolder(): RemoteFolder?
 
-    fun deleteFolder(remoteFolder: RemoteFolder)
+    fun deleteDailyFolder(remoteFolder: RemoteFolder)
 
     fun topLevelFolderWithNameAbsent(folderName: RemoteFolderName): Boolean
 
-    fun createFolderWithName(remoteFolderName: RemoteFolderName)
+    fun createTopLevelFolder(remoteFolderName: RemoteFolderName)
 }

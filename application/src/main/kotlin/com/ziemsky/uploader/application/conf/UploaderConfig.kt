@@ -5,8 +5,7 @@ import com.ziemsky.uploader.securing.DomainEventsNotifier
 import com.ziemsky.uploader.securing.Janitor
 import com.ziemsky.uploader.securing.RemoteRepository
 import com.ziemsky.uploader.securing.Securer
-import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveProvider
-import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveRemoteRepository
+import com.ziemsky.uploader.securing.infrastructure.googledrive.*
 import com.ziemsky.uploader.securing.model.SecuredFileSummary
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.remote.RemoteFolderName
@@ -199,9 +198,16 @@ class UploaderConfig {
     }
 
     @Bean
-    internal fun repository(drive: Drive): RemoteRepository {
+    internal fun gDriveClient(drive: Drive, config: UploaderConfigProperties): GDriveClient =
+            GDriveRetryingClient(
+                    GDriveDirectClient(drive),
+                    config.upload().retryTimeout()
+            )
 
-        val gDriveRemoteRepository = GDriveRemoteRepository(drive)
+    @Bean
+    internal fun repository(drive: Drive, gDriveClient: GDriveClient): RemoteRepository {
+
+        val gDriveRemoteRepository = GDriveRemoteRepository(drive, gDriveClient)
 
         gDriveRemoteRepository.init()
 

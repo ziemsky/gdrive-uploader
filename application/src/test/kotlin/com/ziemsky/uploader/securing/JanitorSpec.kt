@@ -125,11 +125,11 @@ class RemoteRepoStub : RemoteRepository { // todo move to shared test resources?
         }
     }
 
-    override fun deleteFolder(remoteFolder: RemoteFolder) {
+    override fun deleteDailyFolder(remoteFolder: RemoteFolder) {
         dailyFolderNamesSortedAscendingly.remove(remoteFolder.name.toString())
     }
 
     override fun topLevelFolderWithNameAbsent(folderName: RemoteFolderName): Boolean = throw UnsupportedOperationException("not applicable in these tests")
 
-    override fun createFolderWithName(remoteFolderName: RemoteFolderName): Unit = throw UnsupportedOperationException("not applicable in these tests")
+    override fun createTopLevelFolder(remoteFolderName: RemoteFolderName): Unit = throw UnsupportedOperationException("not applicable in these tests")
 }

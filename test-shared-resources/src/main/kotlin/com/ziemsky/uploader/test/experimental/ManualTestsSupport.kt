@@ -39,7 +39,7 @@ class ManualTestsSupport {
 }
 
 private val commands = mapOf(
-        Pair("demoRequestRateLimitViolation", { queryRunner().executeParallelQueries(200) }),
+        Pair("demoRequestRateLimitViolation", { queryRunner().executeQueriesInParallel(200) }),
         Pair("createLocalTestFiles", { testFixtures().createLocalTestFilesToSecure(100, 140_000) })
 )
 

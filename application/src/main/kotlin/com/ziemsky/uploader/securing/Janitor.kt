@@ -15,7 +15,7 @@ class Janitor(private val remoteRepository: RemoteRepository, private val maxDai
 
     fun rotateRemoteDailyFolders() {
         while (remoteRepository.dailyFolderCount() > maxDailyFoldersCount) {
-            remoteRepository.findOldestDailyFolder()?.let(remoteRepository::deleteFolder)
+            remoteRepository.findOldestDailyFolder()?.let(remoteRepository::deleteDailyFolder)
         }
     }
 }

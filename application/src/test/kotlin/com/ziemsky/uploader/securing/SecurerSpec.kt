@@ -66,7 +66,7 @@ class SecurerSpec : UploaderAbstractBehaviourSpec() {
                         """.trimMargin()) {
 
                         verifyOrder {
-                            remoteRepository.createFolderWithName(dailyFolder.name)
+                            remoteRepository.createTopLevelFolder(dailyFolder.name)
                             domainEventsNotifier.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
                         }
                     }
@@ -85,7 +85,7 @@ class SecurerSpec : UploaderAbstractBehaviourSpec() {
                     Then("""no folder creation is attempted
                         |and no event gets emitted""".trimMargin()) {
 
-                        verify(exactly = 0) { remoteRepository.createFolderWithName(any()) }
+                        verify(exactly = 0) { remoteRepository.createTopLevelFolder(any()) }
                         verify(exactly = 0) { domainEventsNotifier.notifyNewRemoteDailyFolderCreated(any()) }
                     }
                 }

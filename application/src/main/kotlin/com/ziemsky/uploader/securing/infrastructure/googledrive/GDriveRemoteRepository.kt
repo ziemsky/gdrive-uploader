@@ -3,6 +3,7 @@ package com.ziemsky.uploader.securing.infrastructure.googledrive
 import com.google.api.client.http.FileContent
 import com.google.api.services.drive.Drive
 import com.ziemsky.uploader.securing.RemoteRepository
+import com.ziemsky.uploader.securing.infrastructure.googledrive.model.GDriveFolder
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.remote.RemoteFolder
 import com.ziemsky.uploader.securing.model.remote.RemoteFolderName
@@ -11,18 +12,18 @@ import mu.KotlinLogging
 private val log = KotlinLogging.logger {}
 
 private const val GOOGLE_DRIVE_FOLDER_MIMETYPE = "application/vnd.google-apps.folder"
-private val DAILY_FOLDER_NAME_REGEX = """\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])""".toRegex()
 
-class GDriveRemoteRepository(val drive: Drive) : RemoteRepository {
+class GDriveRemoteRepository(val drive: Drive, val gDriveClient: GDriveClient) : RemoteRepository {
 
-    // todo synchronised access?
-    // todo Cache class?
+    // todo synchronised access? immutable?
+    // todo Cache class? @Cacheable annotation?
+    // low priority as the usage pattern is such that concurrent access errors are very unlikely
     private val dailyFolders: MutableList<GDriveFolder> = mutableListOf()
 
     fun init() {
         // todo exception when any methods calls before init? delegate to external cache; possibly init on demand
         dailyFolders.clear()
-        dailyFolders.addAll(getTopLevelFolders())
+        dailyFolders.addAll(gDriveClient.getTopLevelDailyFolders())
 
         log.debug("Initialised; remote folders found: $dailyFolders")
     }
@@ -39,11 +40,11 @@ class GDriveRemoteRepository(val drive: Drive) : RemoteRepository {
         )
     }
 
-    override fun deleteFolder(remoteFolder: RemoteFolder) {
+    override fun deleteDailyFolder(remoteFolder: RemoteFolder) {
         dailyFolders
                 .find { it.name == remoteFolder.name.toString() }
                 ?.let {
-                    drive.files().delete(it.id).execute()
+                    gDriveClient.deleteFolder(it)
                     dailyFolders.removeIf {it.name == remoteFolder.name.toString()}
                 }
     }
@@ -68,7 +69,7 @@ class GDriveRemoteRepository(val drive: Drive) : RemoteRepository {
 
         val mediaContent = FileContent(null, localFile.file)
 
-        drive.files().create(gDriveFile, mediaContent).execute()
+        gDriveClient.upload(gDriveFile, mediaContent)
 
         // todo media type
         // is metadata needed or will the client discover and populate it itself?")
@@ -80,18 +81,14 @@ class GDriveRemoteRepository(val drive: Drive) : RemoteRepository {
         return findFolderByName(folderName) == null
     }
 
-    override fun createFolderWithName(remoteFolderName: RemoteFolderName) {
-        log.debug("Folder $remoteFolderName not found; creating.")
+    override fun createTopLevelFolder(remoteFolderName: RemoteFolderName) {
+        log.debug("Creating top level folder $remoteFolderName")
 
-        val dir = com.google.api.services.drive.model.File()
-        dir.name = remoteFolderName.toString()
-        dir.mimeType = GOOGLE_DRIVE_FOLDER_MIMETYPE
+        val createdFolder = gDriveClient.createTopLevelFolder(remoteFolderName.toString())
 
-        val newFolderId = drive.files().create(dir).execute().id
+        log.debug("Created top level folder $createdFolder")
 
-        log.debug("Folder $remoteFolderName not found; created with id $newFolderId.")
-
-        cacheNewFolder(GDriveFolder(remoteFolderName.toString(), newFolderId))
+        cacheNewFolder(createdFolder)
     }
 
     private fun cacheNewFolder(gDriveFolder: GDriveFolder) {
@@ -101,20 +98,4 @@ class GDriveRemoteRepository(val drive: Drive) : RemoteRepository {
     private fun findFolderByName(folderName: RemoteFolderName): GDriveFolder? {
         return dailyFolders.find { gDriveFolder -> gDriveFolder.name == folderName.toString() }
     }
-
-
-    private fun getTopLevelFolders(): MutableList<GDriveFolder> = drive
-            // https://developers.google.com/drive/api/v3/search-parameters
-            .files()
-            .list()
-            .setSpaces("drive")
-            .setQ("mimeType='$GOOGLE_DRIVE_FOLDER_MIMETYPE' and 'root' in parents")
-            .execute()
-            .files
-            ?.asSequence()
-            ?.filter { file -> DAILY_FOLDER_NAME_REGEX.matches(file.name) }
-            ?.map { file -> GDriveFolder(file.name, file.id) } // todo handle paging: https://developers.google.com/drive/api/v3/search-parameters
-            ?.toMutableList() ?: mutableListOf()
 }
-
-data class GDriveFolder(val name: String, val id: String)

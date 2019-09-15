@@ -26,6 +26,8 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+
     implementation("org.springframework.boot:spring-boot-starter-integration")
     implementation("org.springframework.integration:spring-integration-file")
 
@@ -48,6 +50,9 @@ dependencies {
     implementation("com.google.oauth-client:google-oauth-client-jetty")
     implementation("com.google.apis:google-api-services-drive")
     implementation("com.google.api-client:google-api-client")
+
+
+    testImplementation(project(":test-shared-resources"))
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
@@ -93,7 +98,6 @@ val appStart by tasks.registering(JavaFork::class) {
     group = "Application"
     description = """Starts the application from the assembled JAR file as a background process.
                   |  Use to run the app in the background for e2e tests; for normal run call bootRun task.
-                  |
                   """.trimMargin()
 
     main = "-jar"
