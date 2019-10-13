@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/ziemsky/gdrive-uploader.svg?branch=master)](https://travis-ci.com/ziemsky/gdrive-uploader)
+
 # GDrive Uploader
 Small, JVM-based application which, once started, continuously scans a pre-configured directory for `*.jpg` files and
 uploads them to Google Drive, deleting the originals, and then waiting for new ones to appear.
