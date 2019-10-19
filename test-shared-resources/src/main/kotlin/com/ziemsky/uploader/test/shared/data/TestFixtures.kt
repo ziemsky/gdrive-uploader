@@ -74,7 +74,14 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
 
     fun remoteStructureDelete() {
 
-        val fullGDriveContent = retryOnUsageLimitsException {drive.files().list().setFields("files(id, name, mimeType)").execute()}
+        val fullGDriveContent = retryOnUsageLimitsException {
+            drive
+                    .files()
+                    .list()
+                    .setQ("'root' in parents")
+                    .setFields("files(id, name, mimeType)")
+                    .execute()
+        }
 
         log.info("Deleting {} remote files", fullGDriveContent.files.size)
 
@@ -247,7 +254,7 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
 
     private fun <R> retryOnUsageLimitsException(action: () -> R): R = RetryingExecutor.retryOnException(
             action = action,
-            timeOut = Duration.ofSeconds(10),
+            timeOut = Duration.ofMinutes(3),
             isRetryableExceptionPredicate = { throwable ->
                 throwable is GoogleJsonResponseException
                         && throwable.statusCode == 403

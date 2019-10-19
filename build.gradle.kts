@@ -31,8 +31,9 @@ allprojects {
 
 // defined in gradle.properties; done this way to support referencing from buildscript
 val awaitilityVersion: String by rootProject
-
+val kotlinVersion: String by rootProject
 val springBootVersion: String by rootProject
+val springVersion: String by rootProject
 
 val gDriveVersion = "1.27.0"
 
@@ -54,7 +55,7 @@ subprojects {
         // sub-projects rather than here.
 
         dependencies {
-            dependencySet("org.jetbrains.kotlin:1.3.50") { // todo tie to the one in settings file
+            dependencySet("org.jetbrains.kotlin:$kotlinVersion") { // todo tie to the one in settings file
                 entry("kotlin-stdlib-jdk8")
                 entry("kotlin-stdlib")
                 entry("kotlin-reflect")
@@ -62,7 +63,7 @@ subprojects {
 
             dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0")
 
-            dependencySet("org.springframework:5.1.5.RELEASE") {
+            dependencySet("org.springframework:$springVersion") {
                 entry("spring-web")
                 entry("spring-test")
                 entry("spring-context")

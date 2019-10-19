@@ -71,6 +71,13 @@ To specify options as environment variables, uppercase their names and replace d
 for example, the above two would become `UPLOADER_MONITORING_PATH` and `UPLOADER_MONITORING_POLLINGFREQUENCYSECS`,
 respectively. Actual syntax for setting environment variable depends on the shell you are using.
 
+#### Logging
+Application uses Logback and, by default, only logs to console.
+
+To change logging configuration use settings of Spring Boot, as described in [Spring Boot documentation][spring-boot-logging].
+
+Typically,  
+
 ## Authorising application to access Google account
 Before first run, application has to be authorised to access Google account.
 
@@ -122,6 +129,8 @@ For more details of this licence see:
 
 [application.conf]:       https://github.com/ziemsky/gdrive-uploader/blob/master/application/src/main/resources/application.properties
 [HOCON]:                  https://github.com/lightbend/config/blob/master/HOCON.md
-[spring-boot-ext-config]: https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html
 [opensource.org]:         https://opensource.org/    
 [opensource.org-mit]:     https://opensource.org/licenses/MIT
+[spring-boot-ext-config]: https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html
+[spring-boot-logging]:    https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-logging
+[logback-config]:         http://logback.qos.ch/manual/configuration.html                
