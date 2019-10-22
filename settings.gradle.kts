@@ -9,7 +9,8 @@ val pluginVersionsByIds = mapOf(
         "io.spring.dependency-management" to "1.0.8.RELEASE",
         "com.github.johnrengelman.processes" to "0.5.0",
         "com.dorongold.task-tree" to "1.3.1",
-        "com.github.ben-manes.versions" to "0.20.0"
+        "com.github.ben-manes.versions" to "0.20.0",
+        "com.bmuschko.docker-spring-boot-application" to "5.2.0"
 )
 
 val pluginVersionsByNamespaces = mapOf(

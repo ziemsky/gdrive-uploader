@@ -17,7 +17,7 @@ class ManualTestsSupport {
 
         @JvmStatic
         fun testFixtures(): TestFixtures = TestFixtures(
-                Paths.get("/tmp/inbound"),
+                Paths.get("/tmp/uploader/inbound"),
                 drive()
         )
 

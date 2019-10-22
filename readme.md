@@ -76,7 +76,8 @@ Application uses Logback and, by default, only logs to console.
 
 To change logging configuration use settings of Spring Boot, as described in [Spring Boot documentation][spring-boot-logging].
 
-Typically,  
+Simplest option to enable logging to file is to set `--logging.file.name=<path-to-file>` command line argument
+(or set `LOG_FILE` environment variable/system property). This will start loggig to given file with its max limit set to 10MB.  
 
 ## Authorising application to access Google account
 Before first run, application has to be authorised to access Google account.
@@ -84,6 +85,8 @@ Before first run, application has to be authorised to access Google account.
 To be documented.
 
 # Development
+
+Prerequisites: JDK 8
 
 ## Running
 

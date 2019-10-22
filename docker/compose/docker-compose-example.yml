@@ -1,0 +1,55 @@
+version: "3"
+
+services:
+  uploader:
+    image: ziemsky/gdrive-uploader:latest
+
+    volumes:
+      # Location of custom configuration file, overriding some or all configuration options.
+      #
+      # Optional. Uncomment to enable, in which case make sure to also uncomment the line with
+      # SPRING_CONFIG_ADDITIONAL_LOCATION under 'environment' below:
+      #
+      #- /etc/uploader:/app/config/extra
+
+      # Location of Google account credentials.
+      #
+      # Required.
+      # Unless you override the structure of directory via custom application.conf, make sure that this directory
+      # contains credentials in the following structure:
+      # .
+      # └── gdrive
+      #     └── secrets
+      #         ├── credentials.json
+      #         └── tokens
+      #             └── StoredCredential
+      #
+      - /etc/uploader/google:/app/config/google
+
+      # Location of the log file.
+      #
+      # Optional. Uncomment to enable generation of the log file, in which case make sure to also uncomment
+      # line with environment variable LOGGING_FILE_NAME under 'environment' below:
+      #
+      #- /var/log/uploader:/app/log
+
+      # Directory monitored for incoming files.
+      #
+      # Required.
+      #
+      - /var/opt/uploader/inbound:/app/inbound
+
+    environment:
+      # Enables generation of a log file.
+      #
+      # Optional; uncomment to enable logging into a file, in which case make sure to uncomment corresponding
+      # line under 'volumes' to make the log file visible from the host:
+      #
+      #LOGGING_FILE_NAME: '/app/log/uploader.log'
+
+      # Enables use of custom configuration file, overriding some or all configuration properties.
+      #
+      # Optional. Uncomment to enable, in which case make sure to uncomment corresponding line under 'volumes'
+      # to give the application visibility of the file located on the host:
+      #
+      #SPRING_CONFIG_ADDITIONAL_LOCATION: /app/config/extra/application.conf

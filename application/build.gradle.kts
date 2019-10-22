@@ -1,3 +1,4 @@
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import com.github.jengelman.gradle.plugins.processes.tasks.JavaFork
 import org.awaitility.kotlin.await
 import org.springframework.boot.gradle.tasks.bundling.BootJar
@@ -20,6 +21,8 @@ plugins {
     id("org.springframework.boot")
 
     id("com.github.johnrengelman.processes")
+
+    id("com.bmuschko.docker-spring-boot-application")
 }
 
 dependencies {
@@ -153,6 +156,66 @@ val appStop by tasks.registering(Exec::class) {
     doFirst {
         args(listOf(pidFile.readText()))
     }
+}
+
+
+// todo document in readme
+// https://bmuschko.github.io/gradle-docker-plugin/#getting_started
+// https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+// https://docs.docker.com/docker-hub/access-tokens/
+
+docker {
+
+    springBootApplication {
+        applyPropertyIfProvided("docker.image", tag::set)
+
+        baseImage.set("openjdk:8-alpine")
+    }
+
+    registryCredentials {
+        // ideally should use tokens but the plugin does not support them, yet https://docs.docker.com/docker-hub/access-tokens/
+
+        applyPropertyIfProvided("docker.repo.url", url::set)
+        applyPropertyIfProvided("docker.repo.user.name", username::set)
+        applyPropertyIfProvided("docker.repo.user.pass", password::set)
+        applyPropertyIfProvided("docker.repo.user.email", email::set)
+    }
+}
+
+tasks.named<Dockerfile>("dockerCreateDockerfile") {
+
+    // the plugin creates dir /app and puts all application's components there
+    // copies content from application/build/docker - but each component has to be explicitly specified
+
+    runCommand("""
+        mkdir /app/config  ; \   
+        mkdir /app/log     ; \    
+        mkdir /app/inbound 
+        """.trimIndent()
+    )
+
+    copyFile(
+            "config",
+            "config"
+    )
+}
+
+val dockerImageCopyCustomContext by tasks.registering(Copy::class) {
+    // adds custom content to the application/build/docker context dir
+
+    val sourceContextDir = "${rootProject.projectDir}/docker/context"
+    val actualContextDir = "${buildDir}/docker"
+
+    from(fileTree(sourceContextDir))
+    into(actualContextDir)
+}
+
+tasks.named<Sync>("dockerSyncBuildContext") {
+    dependsOn(dockerImageCopyCustomContext)
+}
+
+fun applyPropertyIfProvided(propertyName: String, action: (String) -> Unit) {
+    (rootProject.findProperty(propertyName) as String?)?.let(action)
 }
 
 fun parseAppStartArgs(): List<String> {
