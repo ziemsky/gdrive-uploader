@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.test.context.ContextConfiguration
 import java.io.UncheckedIOException
 import java.nio.file.Paths
+import java.util.*
 
 private val log = KotlinLogging.logger {}
 
@@ -34,6 +35,8 @@ class UploaderSpec(
         testFixtures: TestFixtures
 ) : BehaviorSpec() {
 
+    val rootFolderName = "e2eTest_${UUID.randomUUID()}"
+
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
     override fun beforeSpec(spec: Spec) {
@@ -44,6 +47,7 @@ class UploaderSpec(
         System.setProperty("uploader.google.drive.tokensDirectory", Paths.get(confPath, "google/gdrive/secrets/tokens").toAbsolutePath().toString())
         System.setProperty("uploader.google.drive.credentialsFile", Paths.get(confPath, "google/gdrive/secrets/credentials.json").toAbsolutePath().toString())
         System.setProperty("uploader.monitoring.path", monitoringPath)
+        System.setProperty("uploader.upload.rootFolderName", rootFolderName)
     }
 
 
@@ -62,6 +66,7 @@ class UploaderSpec(
             // todo elaborate description
             testFixtures.remoteStructureDelete()
             testFixtures.localTestContentDelete() // todo consistent clenup methods' naming
+            val rootFolder = testFixtures.createRootFolder(rootFolderName)
 
             // enough existing daily folders to trigger rotation of the oldest
             val preExistingRemoteContent = create(
@@ -89,7 +94,7 @@ class UploaderSpec(
                             )
                     )
             )
-            testFixtures.remoteStructureCreateFrom(preExistingRemoteContent)
+            testFixtures.remoteStructureCreateFrom(rootFolder.id, preExistingRemoteContent)
 
             // A set of files:
             // - scattered across few, non-consecutive dates,
@@ -126,7 +131,7 @@ class UploaderSpec(
                 testFixtures.localStructureCreateFrom(localContentToUpload)
                 log.debug { "Created Local Structure" }
 
-                then("""it uploads all local files
+                Then("""it uploads all local files
                    |and rotates the remote ones
                    |and deletes local original files
                    |and does not delete any other remote content""".trimMargin()) {
@@ -180,7 +185,7 @@ class UploaderSpec(
                     eventually(2.minutes, UncheckedIOException::class.java) {
                         eventually(2.minutes, AssertionFailedError::class.java) {
                             testFixtures.localStructure() shouldBe empty // todo FsStructure.EMPTY
-                            testFixtures.remoteStructure() shouldBe remoteContentExpected
+                            testFixtures.remoteStructure(rootFolder.id) shouldBe remoteContentExpected
                         }
                     }
                 }

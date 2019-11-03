@@ -2,7 +2,7 @@ package com.ziemsky.uploader.securing
 
 import com.ziemsky.uploader.UploaderAbstractBehaviourSpec
 import com.ziemsky.uploader.securing.model.local.LocalFile
-import com.ziemsky.uploader.securing.model.remote.RemoteFolder
+import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
 import com.ziemsky.uploader.securing.model.remote.RemoteFolderName
 import io.kotlintest.shouldBe
 import java.time.LocalDate
@@ -92,7 +92,7 @@ class JanitorSpec : UploaderAbstractBehaviourSpec() {
     }
 }
 
-class RemoteRepoStub : RemoteRepository { // todo move to shared test resources?
+class RemoteRepoStub : RemoteStorageService { // todo move to shared test resources?
 
     private var dailyFolderNamesSortedAscendingly: SortedSet<String> = sortedSetOf()
 
@@ -113,23 +113,23 @@ class RemoteRepoStub : RemoteRepository { // todo move to shared test resources?
         return dailyFolderNamesSortedAscendingly.size
     }
 
-    override fun upload(targetFolder: RemoteFolder, localFile: LocalFile) {
+    override fun upload(targetDailyFolder: RemoteDailyFolder, localFile: LocalFile) {
         // no-op: irrelevant in these tests
     }
 
-    override fun findOldestDailyFolder(): RemoteFolder? {
+    override fun findOldestDailyFolder(): RemoteDailyFolder? {
         return if (dailyFolderNamesSortedAscendingly.isEmpty()) {
             null
         } else {
-            RemoteFolder.from(LocalDate.parse(dailyFolderNamesSortedAscendingly.first()))
+            RemoteDailyFolder.from(LocalDate.parse(dailyFolderNamesSortedAscendingly.first()))
         }
     }
 
-    override fun deleteDailyFolder(remoteFolder: RemoteFolder) {
-        dailyFolderNamesSortedAscendingly.remove(remoteFolder.name.toString())
+    override fun deleteDailyFolder(remoteDailyFolder: RemoteDailyFolder) {
+        dailyFolderNamesSortedAscendingly.remove(remoteDailyFolder.name.toString())
     }
 
-    override fun topLevelFolderWithNameAbsent(folderName: RemoteFolderName): Boolean = throw UnsupportedOperationException("not applicable in these tests")
+    override fun isTopLevelFolderWithNameAbsent(folderName: RemoteFolderName): Boolean = throw UnsupportedOperationException("not applicable in these tests")
 
     override fun createTopLevelFolder(remoteFolderName: RemoteFolderName): Unit = throw UnsupportedOperationException("not applicable in these tests")
 }

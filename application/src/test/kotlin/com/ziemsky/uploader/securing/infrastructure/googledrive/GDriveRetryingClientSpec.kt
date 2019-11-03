@@ -20,6 +20,9 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
 
     init {
 
+        val rootFolderName = "rootFolderName"
+        val rootFolder = GDriveFolder(rootFolderName, "root_folder_id")
+
         Given("Instance of retrying client") { // todo restructure - move setup to background, 'Give' focus on inputs?
 
             mockkObject(BlockingRetryingExecutor.Companion)
@@ -55,8 +58,8 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
                 Then("delegates the action to the retrying executor") {
                     assertThatRetryingClientDelegatesToDirectClientThroughRetryingExecutor(
                             clientReturnValue = expectedTopLevelDailyFolders,
-                            expectedInteractionWithDirectClient = { gDriveDirectClient.getTopLevelDailyFolders() },
-                            retryingClientActionToVerify = { gDriveRetryingClient.getTopLevelDailyFolders() },
+                            expectedInteractionWithDirectClient = { gDriveDirectClient.childFoldersOf(rootFolder) },
+                            retryingClientActionToVerify = { gDriveRetryingClient.childFoldersOf(rootFolder) },
                             expectedTimeout = expectedTimeout
                     )
                 }
@@ -86,8 +89,8 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
                 Then("delegates the action to the retrying executor") {
                     assertThatRetryingClientDelegatesToDirectClientThroughRetryingExecutor(
                             clientReturnValue = folderCreated,
-                            expectedInteractionWithDirectClient = { gDriveDirectClient.createTopLevelFolder(folderToCreateName) },
-                            retryingClientActionToVerify = { gDriveRetryingClient.createTopLevelFolder(folderToCreateName) },
+                            expectedInteractionWithDirectClient = { gDriveDirectClient.createTopLevelFolder("rootFolderId", folderToCreateName) },
+                            retryingClientActionToVerify = { gDriveRetryingClient.createTopLevelFolder("rootFolderId", folderToCreateName) },
                             expectedTimeout = expectedTimeout
                     )
                 }

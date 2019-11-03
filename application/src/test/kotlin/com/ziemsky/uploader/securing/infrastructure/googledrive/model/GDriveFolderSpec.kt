@@ -15,6 +15,7 @@ class GDriveFolderSpec : BehaviorSpec() {
         Given("Valid Google Drive item id") {
 
             val validIds = arrayOf(
+                    "0B7BjJByfiGCmWnBYQUFwcElWRkU",
                     "1ZmeZBczGsWDR99tm4NlLW3rjzX78p_qo",
                     "14zJk2NHrUcuARFKSJ2QoAi_IIYFCqH0V",
                     "1PNTqjs-Cvhqyixqz7TjklB2-BOjipaAc",
@@ -51,8 +52,6 @@ class GDriveFolderSpec : BehaviorSpec() {
             val invalidGoogleDriveItemIds = arrayOf(
                     row("",                                             "empty name"),
                     row("                                           ",  "blank name"),
-                    row("012345678901234567890123456789012345678901",   "name shorter than 33 characters"),
-                    row("01234567890123456789012345678901234567890120", "name longer than 33 characters"),
                     // create one row per illegal character
                     *"¬`|!\"£$%^&*()+={[}]:;@'~#|\\<,>.?/ \t\n\r"
                             .map { illegalCharacter ->
@@ -80,7 +79,7 @@ class GDriveFolderSpec : BehaviorSpec() {
                             val actualException = shouldThrow<IllegalArgumentException> {
                                 createNewInstance.invoke(validFolderName, invalidGoogleDriveItemId)
                             }
-                            actualException.message shouldBe "Id should be 33 characters long, comprising only characters 0-9, a-z, A-Z, '-' and '_', but was '$invalidGoogleDriveItemId'."
+                            actualException.message shouldBe "Id should be non-empty, non-blank and comprise only characters 0-9, a-z, A-Z, '-' and '_', but was '$invalidGoogleDriveItemId'."
                         }
                     }
                 }
@@ -144,7 +143,7 @@ class GDriveFolderSpec : BehaviorSpec() {
                             val actualException = shouldThrow<IllegalArgumentException> {
                                 createNewInstance.invoke(invalidFolderName, validGoogleDriveItemId)
                             }
-                            actualException.message shouldBe "Name should be at least one character long and comprising not only white space characters, but was '$invalidFolderName'."
+                            actualException.message shouldBe "Name should be non-empty and non-blank, but was '$invalidFolderName'."
                         }
                     }
                 }

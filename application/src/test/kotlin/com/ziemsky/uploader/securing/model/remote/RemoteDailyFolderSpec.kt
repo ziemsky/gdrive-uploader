@@ -7,7 +7,7 @@ import io.kotlintest.specs.BehaviorSpec
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
-class RemoteFolderSpec : BehaviorSpec ({
+class RemoteDailyFolderSpec : BehaviorSpec ({
 
     Given("Date") {
 
@@ -15,7 +15,7 @@ class RemoteFolderSpec : BehaviorSpec ({
 
         When("Creating folder") {
 
-            val actualRepoFolder = RemoteFolder.from(date)
+            val actualRepoFolder = RemoteDailyFolder.from(date)
 
             Then("Created folder has name derived from the date") {
 
@@ -29,7 +29,7 @@ class RemoteFolderSpec : BehaviorSpec ({
 
         When("Creating folder") {
 
-            val actualRepoFolder = RemoteFolder.from("2019-02-16")
+            val actualRepoFolder = RemoteDailyFolder.from("2019-02-16")
 
             Then("Created folder has name matching given string") {
                 actualRepoFolder shouldNotBe null
@@ -47,7 +47,7 @@ class RemoteFolderSpec : BehaviorSpec ({
             Then("Error is reported") {
 
                 shouldThrow<DateTimeParseException> { // todo custom exception?
-                    RemoteFolder.from(invalidFolderName)
+                    RemoteDailyFolder.from(invalidFolderName)
                 }
             }
         }

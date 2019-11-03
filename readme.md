@@ -112,6 +112,14 @@ When calling task `appStart` with arguments that contain spaces make sure to esc
 ./gradlew :application:bootRun --args='--spring.config.additional-location=file:/<path/to/the/file's/parent/dir>'
 ```
 
+## Gotchas
+The application assumes it has exclusive control over the remote folder's content; on start it looks up all the remote
+daily folders and caches them locally, and updates the local cache as it creates and deletes the folders remotely.
+
+It _does not_ query the remote target folder for content until next restart - if you delete, move, rename or create
+a folder under the target, the application won't know about this operation and you'll need to restart it to refresh its
+local cache, otherwise the uploads or attempts to rotate remote folders may fail.    
+
 ## Testing
 See [testing.md](testing.md)
 

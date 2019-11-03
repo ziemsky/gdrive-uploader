@@ -28,7 +28,7 @@ class GDriveProvider(
                 applicationUserName,
                 GoogleNetHttpTransport.newTrustedTransport(),
                 JacksonFactory.getDefaultInstance(),
-                listOf(DriveScopes.DRIVE_FILE, DriveScopes.DRIVE_METADATA_READONLY),
+                listOf(DriveScopes.DRIVE, DriveScopes.DRIVE_METADATA_READONLY),
                 tokensDirectory,
                 credentialsFilePath)
 

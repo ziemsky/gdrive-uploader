@@ -3,7 +3,7 @@ package com.ziemsky.uploader.securing
 import com.ziemsky.uploader.UploaderAbstractBehaviourSpec
 import com.ziemsky.uploader.securing.model.SecuredFileSummary
 import com.ziemsky.uploader.securing.model.local.LocalFile
-import com.ziemsky.uploader.securing.model.remote.RemoteFolder
+import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,79 +19,80 @@ class SecurerSpec : UploaderAbstractBehaviourSpec() {
 
         Given("A file to secure") {
 
-            val remoteRepository: RemoteRepository = mockk(relaxed = true)
-            val domainEventsNotifier: DomainEventsNotifier = mockk(relaxed = true)
+            val remoteStorageService = mockk<RemoteStorageService>(relaxed = true)
+            val domainEventsNotifier = mockk<DomainEventsNotifier>(relaxed = true)
 
             val clock = Clock.fixed(Instant.parse("2019-08-19T20:33:00Z"), ZoneId.of("UTC"))
 
-            val securer = Securer(remoteRepository, domainEventsNotifier, clock)
+            val securer = Securer(remoteStorageService, domainEventsNotifier, clock)
 
             val localFile = LocalFile(File("20180901120000-00-front.jpg"))
 
-            val dailyFolder = RemoteFolder.from(localFile.date)
+            val dailyFolder = RemoteDailyFolder.from(localFile.date)
 
 
-            When("securing file") {
+            And("remote target folder") {
 
-                securer.secure(localFile)
+                When("securing the file") {
 
-                Then("""file gets secured in the repository in corresponding daily folder
+                    securer.secure(localFile)
+
+                    Then("""file gets secured in the repository in corresponding daily folder
                     |and secured file gets reported
                 """.trimMargin()) {
 
+                        val expectedSecuredFileSummary = SecuredFileSummary(
+                                uploadStart = clock.instant(),
+                                uploadEnd = clock.instant(),
+                                securedFile = localFile
+                        )
 
-                    val expectedSecuredFileSummary = SecuredFileSummary(
-                            uploadStart = clock.instant(),
-                            uploadEnd = clock.instant(),
-                            securedFile = localFile
-                    )
-
-                    verify { remoteRepository.upload(dailyFolder, localFile) }
-                    verify { domainEventsNotifier.notifyFileSecured(expectedSecuredFileSummary) }
+                        verify { remoteStorageService.upload(dailyFolder, localFile) }
+                        verify { domainEventsNotifier.notifyFileSecured(expectedSecuredFileSummary) }
+                    }
                 }
-            }
 
 
-            And("no remote daily folder existing for the day of the file") {
+                And("no remote daily folder existing for the day of the file") {
 
-                every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns true
+                    every { remoteStorageService.isTopLevelFolderWithNameAbsent(dailyFolder.name) } returns true
 
 
-                When("asked to ensure daily folder available in the repository for the file") {
+                    When("ensuring daily folder available in the repository for the file") {
 
-                    securer.ensureRemoteDailyFolder(localFile)
+                        securer.ensureRemoteDailyFolder(localFile)
 
-                    Then("""daily folder gets created
+                        Then("""daily folder gets created
                         |and the creation of the folder gets reported
                         """.trimMargin()) {
 
-                        verifyOrder {
-                            remoteRepository.createTopLevelFolder(dailyFolder.name)
-                            domainEventsNotifier.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
+                            verifyOrder {
+                                remoteStorageService.createTopLevelFolder(dailyFolder.name)
+                                domainEventsNotifier.notifyNewRemoteDailyFolderCreated(dailyFolder.name)
+                            }
+                        }
+                    }
+                }
+
+
+                And("remote daily folder existing for the day of the file") {
+
+                    every { remoteStorageService.isTopLevelFolderWithNameAbsent(dailyFolder.name) } returns false
+
+                    When("ensuring daily folder available in the repository for the file") {
+
+                        securer.ensureRemoteDailyFolder(localFile)
+
+                        Then("""no folder creation is attempted
+                        |and no event gets emitted""".trimMargin()) {
+
+                            verify(exactly = 0) { remoteStorageService.createTopLevelFolder(any()) }
+                            verify(exactly = 0) { domainEventsNotifier.notifyNewRemoteDailyFolderCreated(any()) }
                         }
                     }
                 }
             }
-
-
-            And("remote daily folder existing for the day of the file") {
-
-                every { remoteRepository.topLevelFolderWithNameAbsent(dailyFolder.name) } returns false
-
-                When("asked to ensure daily folder available in the repository for the file") {
-
-                    securer.ensureRemoteDailyFolder(localFile)
-
-                    Then("""no folder creation is attempted
-                        |and no event gets emitted""".trimMargin()) {
-
-                        verify(exactly = 0) { remoteRepository.createTopLevelFolder(any()) }
-                        verify(exactly = 0) { domainEventsNotifier.notifyNewRemoteDailyFolderCreated(any()) }
-                    }
-                }
-            }
         }
-
 
 // todo remove
 //    given("A batch of files to secure, dated across several days with remote folders for some of the files missing") {

@@ -9,6 +9,7 @@ import com.google.api.services.drive.Drive
 import com.ziemsky.fsstructure.FsDir
 import com.ziemsky.fsstructure.FsItem
 import com.ziemsky.fsstructure.FsStructure
+import com.ziemsky.uploader.securing.infrastructure.googledrive.model.GDriveFolder
 import com.ziemsky.uploader.test.shared.RetryingExecutor
 import mu.KotlinLogging
 import java.io.ByteArrayOutputStream
@@ -72,6 +73,28 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
         return fsStructure
     }
 
+    fun remoteStructure(folderId: String): FsStructure {
+
+        val fullUndeletedGDriveContent = liveFilesListQuery().setFields("files(id, name, mimeType, parents)").execute()
+
+        val fsItems: List<FsItem> = children(folderId, fullUndeletedGDriveContent.files)
+
+        val fsStructure = FsStructure.create(fsItems)
+
+        return fsStructure
+    }
+
+    fun remoteStructureWithin(folderId: String): FsStructure {
+
+        val fullUndeletedGDriveContent = liveFilesListQuery().setFields("files(id, name, mimeType, parents)").execute()
+
+        val fsItems: List<FsItem> = children(folderId, fullUndeletedGDriveContent.files)
+
+        val fsStructure = FsStructure.create(fsItems)
+
+        return fsStructure
+    }
+
     fun remoteStructureDelete() {
 
         val fullGDriveContent = retryOnUsageLimitsException {
@@ -79,6 +102,48 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                     .files()
                     .list()
                     .setQ("'root' in parents")
+                    .setFields("files(id, name, mimeType)")
+                    .execute()
+        }
+
+        log.info("Deleting {} remote files", fullGDriveContent.files.size)
+
+        if (fullGDriveContent.files.isEmpty()) return
+
+        val deletionBatch = drive.batch()
+
+        fullGDriveContent.files.forEach {
+            drive.files()
+                    .delete(it.id)
+                    .queue(
+                            deletionBatch,
+                            object : JsonBatchCallback<Void>() {
+
+                                fun itemType(): String {
+                                    return if (GOOGLE_DRIVE_FOLDER_MIMETYPE.equals(it.mimeType)) "folder" else "file"
+                                }
+
+                                override fun onSuccess(file: Void?, responseHeaders: HttpHeaders) {
+                                    log.info("Deleted {} {}: '{}'", itemType(), it.id, it.name)
+                                }
+
+                                override fun onFailure(e: GoogleJsonError, responseHeaders: HttpHeaders) {
+                                    log.error("Failed to delete ${itemType()} ${it.id}: '${it.name}'", e)
+                                }
+                            }
+                    )
+        }
+
+        retryOnUsageLimitsException { deletionBatch.execute() }
+    }
+
+    fun remoteStructureDeleteContentOf(rootFolderId: String) {
+
+        val fullGDriveContent = retryOnUsageLimitsException {
+            drive
+                    .files()
+                    .list()
+                    .setQ("'$rootFolderId' in parents")
                     .setFields("files(id, name, mimeType)")
                     .execute()
         }
@@ -140,13 +205,57 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                     file.setName(fileItem.name())
 
                     if (fileItem.isNested()) {
-                        val parentId: String? = parents[fileItem.parent()]?.id
+                        val parentId: String? = parents[fileItem.parent()]?.id ?: "root"
                         file.setParents(listOf(parentId))
                     }
 
                     val mediaContent = ByteArrayContent(null, fileItem?.content)
 
                     val fileId = retryOnUsageLimitsException { drive.files().create(file, mediaContent).execute().id }
+
+                    log.info { "Created remote ${fileItem} with id ${fileId}" }
+                }
+        )
+    }
+
+
+    fun remoteStructureCreateFrom(folderId: String, remoteContent: FsStructure?) {
+
+        val parents = HashMap<FsDir, com.google.api.services.drive.model.File>()
+
+        remoteContent?.walk(
+                { dirItem ->
+                    val dirToCreate = com.google.api.services.drive.model.File()
+                    dirToCreate.setName(dirItem.name())
+                    dirToCreate.setMimeType(GOOGLE_DRIVE_FOLDER_MIMETYPE)
+
+                    val parentId: String = if (dirItem.isNested()) {
+                        parents[dirItem.parent()]!!.id
+                    } else {
+                        folderId
+                    }
+                    dirToCreate.setParents(listOf(parentId))
+
+                    val dirCreated = retryOnUsageLimitsException { drive.files().create(dirToCreate).execute() }
+
+                    log.info { "Created remote ${dirItem} with id ${dirCreated.id}" }
+
+                    parents.put(dirItem, dirCreated)
+                },
+                { fileItem ->
+                    val fileToCreate = com.google.api.services.drive.model.File()
+                    fileToCreate.setName(fileItem.name())
+
+                    val parentId: String = if (fileItem.isNested) {
+                        parents[fileItem.parent()]!!.id
+                    } else {
+                        folderId
+                    }
+                    fileToCreate.setParents(listOf(parentId))
+
+                    val mediaContent = ByteArrayContent(null, fileItem?.content)
+
+                    val fileId = retryOnUsageLimitsException { drive.files().create(fileToCreate, mediaContent).execute().id }
 
                     log.info { "Created remote ${fileItem} with id ${fileId}" }
                 }
@@ -252,6 +361,19 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
                 .id
     }
 
+    fun findChildFolderIdByName(parentFolderId: String, folderName: String): String? = retryOnUsageLimitsException { // todo return folder object
+        drive
+                // https://developers.google.com/drive/api/v3/search-parameters
+                .files()
+                .list()
+                .setSpaces("drive")
+                .setQ("mimeType='$GOOGLE_DRIVE_FOLDER_MIMETYPE' and '$parentFolderId' in parents and name = '$folderName'")
+                .execute()
+                .files
+                .first()
+                .id
+    }
+
     private fun <R> retryOnUsageLimitsException(action: () -> R): R = RetryingExecutor.retryOnException(
             action = action,
             timeOut = Duration.ofMinutes(3),
@@ -266,4 +388,18 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
             },
             actionOnExpiration = { log.error { "expired" } }
     )
+
+    fun createRootFolder(folderName: String): GDriveFolder {
+        val dir = com.google.api.services.drive.model.File()
+        dir.setName(folderName)
+        dir.setMimeType(GOOGLE_DRIVE_FOLDER_MIMETYPE)
+
+        dir.setParents(listOf("root"))
+
+        val createdDir = retryOnUsageLimitsException { drive.files().create(dir).execute() }
+
+        log.info { "Created remote ${createdDir}" }
+
+        return GDriveFolder(folderName, createdDir.id)
+    }
 }

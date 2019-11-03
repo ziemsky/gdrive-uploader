@@ -9,15 +9,24 @@ import java.time.Duration
 
 class GDriveRetryingClient(private val gDriveDirectClient: GDriveDirectClient, private val retryTimeout: Duration) : GDriveClient {
 
-    override fun upload(gDriveFile: File, mediaContent: FileContent) = retryOnUsageLimitsException {
-            gDriveDirectClient.upload(gDriveFile, mediaContent)
-        }
+    override fun getRootFolder(rootFolderName: String): GDriveFolder {
 
-    override fun getTopLevelDailyFolders(): List<GDriveFolder> {
+        lateinit var rootFolder: GDriveFolder
+
+        retryOnUsageLimitsException { rootFolder = gDriveDirectClient.getRootFolder(rootFolderName) }
+
+        return rootFolder
+    }
+
+    override fun upload(gDriveFile: File, mediaContent: FileContent) = retryOnUsageLimitsException {
+        gDriveDirectClient.upload(gDriveFile, mediaContent)
+    }
+
+    override fun childFoldersOf(parentFolder: GDriveFolder): List<GDriveFolder> {
 
         lateinit var topLevelDailyFolders: List<GDriveFolder>
 
-        retryOnUsageLimitsException { topLevelDailyFolders = gDriveDirectClient.getTopLevelDailyFolders() }
+        retryOnUsageLimitsException { topLevelDailyFolders = gDriveDirectClient.childFoldersOf(parentFolder) }
 
         return topLevelDailyFolders
     }
@@ -26,11 +35,11 @@ class GDriveRetryingClient(private val gDriveDirectClient: GDriveDirectClient, p
         gDriveDirectClient.deleteFolder(remoteFolder)
     }
 
-    override fun createTopLevelFolder(folderName: String): GDriveFolder {
+    override fun createTopLevelFolder(rootFolderId: String, folderName: String): GDriveFolder {
 
         lateinit var newlyCreatedTopLevelFolder: GDriveFolder
 
-        retryOnUsageLimitsException { newlyCreatedTopLevelFolder = gDriveDirectClient.createTopLevelFolder(folderName) }
+        retryOnUsageLimitsException { newlyCreatedTopLevelFolder = gDriveDirectClient.createTopLevelFolder(rootFolderId, folderName) }
 
         return newlyCreatedTopLevelFolder
     }

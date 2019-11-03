@@ -7,7 +7,7 @@ import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveDirectClie
 import com.ziemsky.uploader.securing.infrastructure.googledrive.GDriveRetryingClient
 import com.ziemsky.uploader.securing.infrastructure.googledrive.model.GDriveFolder
 import com.ziemsky.uploader.securing.model.local.LocalFile
-import com.ziemsky.uploader.securing.model.remote.RemoteFolder
+import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
 import com.ziemsky.uploader.test.shared.data.TestFixtures
 import io.kotlintest.*
@@ -27,14 +27,14 @@ class GDriveDirectClientSpec(val drive: Drive,
 
     lateinit var gDriveClient: GDriveRetryingClient
 
-    // todo consider slimming down pre-existing remote folder structure - too many unnecesary items to create, too much time wasted? different set for different tests?
+    // todo consider slimming down pre-existing remote folder structure - too many unnecessary items to create, too much time wasted? different set for different tests?
 
     init {
 
         Given("a remote structure of daily folders exist") {
-            testInitialisedAndDriveCreated()
+            val rootFolder = testInitialisedAndDriveCreated()
 
-            testFixtures.remoteStructureCreateFrom(create(
+            testFixtures.remoteStructureCreateFrom(rootFolder.id, create(
                     dir("2018-09-01",
                             fle("nested file"),
                             dir("nested dir"),
@@ -57,10 +57,12 @@ class GDriveDirectClientSpec(val drive: Drive,
                     fle("mis-matching top-level file")
             ))
 
-            When("asked for top level folders") {
+            When("retrieving child folders of given folder") {
+
+                val actualFolders = gDriveClient.childFoldersOf(rootFolder)
 
                 Then("returns existing top level folders") {
-                    gDriveClient.getTopLevelDailyFolders() should containExactlyFoldersWithIdsInAnyOrder(
+                    actualFolders should containExactlyFoldersWithIdsInAnyOrder(
                             "2018-09-01",
                             "2018-09-02",
                             "2018-09-03"
@@ -68,17 +70,17 @@ class GDriveDirectClientSpec(val drive: Drive,
                 }
             }
 
-            When("asked to remove an existing folder") {
+            When("removing an existing folder") {
 
                 val targetFolderName = "2018-09-01"
-                val targetFolderId = testFixtures.findTopLevelFolderIdByName(targetFolderName)
+                val targetFolderId = testFixtures.findChildFolderIdByName(rootFolder.id, targetFolderName)
 
                 gDriveClient.deleteFolder(GDriveFolder(targetFolderName, targetFolderId!!))
 
 
                 Then("deletes requested folder with its content, leaving other content intact, and updates local cache") {
 
-                        testFixtures.remoteStructure() shouldBe create(
+                        testFixtures.remoteStructureWithin(rootFolder.id) shouldBe create(
                                 dir("2018-09-02",
                                         fle("nested file"),
                                         dir("nested dir"),
@@ -98,15 +100,15 @@ class GDriveDirectClientSpec(val drive: Drive,
                 }
             }
 
-            When("asked to create new top level folder with given name") {
+            When("creating new folder with given name as a child of another folder") {
 
                 val expectedFolderName = "2020-12-10"
 
-                val actualGDriveFolder = gDriveClient.createTopLevelFolder(expectedFolderName)
+                val actualGDriveFolder = gDriveClient.createTopLevelFolder(rootFolder.id, expectedFolderName)
 
                 Then("new remote folder gets created alongside existing ones") {
 
-                    testFixtures.remoteStructure() shouldBe create(
+                    testFixtures.remoteStructureWithin(rootFolder.id) shouldBe create(
                             dir(expectedFolderName), // newly added folder
 
                             dir("2018-09-01",
@@ -137,12 +139,12 @@ class GDriveDirectClientSpec(val drive: Drive,
         }
 
         Given("a single file to upload") {
-            testInitialisedAndDriveCreated()
+            val rootFolder = testInitialisedAndDriveCreated()
 
             val testFileName = "20180901120000-00-front.jpg"
 
 
-            val targetFolder = RemoteFolder.from(LocalDate.of(2018, 9, 1))
+            val targetFolder = RemoteDailyFolder.from(LocalDate.of(2018, 9, 1))
 
             val expectedStructure = create(
                     dir(targetFolder.name.toString(),
@@ -156,11 +158,11 @@ class GDriveDirectClientSpec(val drive: Drive,
 
             And("existing, corresponding daily folder") {
 
-                testFixtures.remoteStructureCreateFrom(create(
+                testFixtures.remoteStructureCreateFrom(rootFolder.id, create(
                         dir(targetFolder.name.toString())
                 ))
 
-                val existingDailyFolderId = testFixtures.findTopLevelFolderIdByName(targetFolder.name.toString())
+                val existingDailyFolderId = testFixtures.findChildFolderIdByName(rootFolder.id, targetFolder.name.toString())
 
                 val gDriveFile = com.google.api.services.drive.model.File()
                 gDriveFile.name = localFile.nameLocal.raw
@@ -175,7 +177,7 @@ class GDriveDirectClientSpec(val drive: Drive,
 
                     Then("the file is uploaded to the existing daily folder") {
 
-                        testFixtures.remoteStructure() shouldBe expectedStructure
+                        testFixtures.remoteStructure(rootFolder.id) shouldBe expectedStructure
                     }
                 }
             }
@@ -196,10 +198,15 @@ class GDriveDirectClientSpec(val drive: Drive,
         }
     }
 
-    private fun testInitialisedAndDriveCreated() {
+    private fun testInitialisedAndDriveCreated(): GDriveFolder {
         testFixtures.localTestContentDelete()
         testFixtures.remoteStructureDelete()
 
+        val rootFolder = testFixtures.createRootFolder("rootFolder")
+
         gDriveClient = GDriveRetryingClient(GDriveDirectClient(drive), Duration.ofMinutes(1))
+
+        return rootFolder
     }
+
 }

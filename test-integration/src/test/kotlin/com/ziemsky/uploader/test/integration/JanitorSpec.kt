@@ -25,7 +25,7 @@ class JanitorSpec(testFixtures: TestFixtures,
 
     override fun beforeSpec(spec: Spec) {
         janitor = Janitor(
-                remoteRepository = mockk(), // unused in these tests
+                remoteStorageService = mockk(), // unused in these tests
                 maxDailyFoldersCount = 5
         )
     }

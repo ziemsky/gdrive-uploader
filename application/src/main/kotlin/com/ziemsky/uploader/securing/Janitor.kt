@@ -5,17 +5,21 @@ import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-class Janitor(private val remoteRepository: RemoteRepository, private val maxDailyFoldersCount: Int) {
+class Janitor(private val remoteStorageService: RemoteStorageService, private val maxDailyFoldersCount: Int) {
 
     fun cleanupSecuredFile(localFile: LocalFile) {
-        log.info { "Deleting $localFile" }
-
+        log.info { "Deleting $localFile." }
         localFile.file.delete()
+        log.info { "Deleted $localFile." }
     }
 
     fun rotateRemoteDailyFolders() {
-        while (remoteRepository.dailyFolderCount() > maxDailyFoldersCount) {
-            remoteRepository.findOldestDailyFolder()?.let(remoteRepository::deleteDailyFolder)
+        while (remoteStorageService.dailyFolderCount() > maxDailyFoldersCount) {
+            remoteStorageService.findOldestDailyFolder()?.let {
+                log.info { "Deleting remote folder $it." }
+                remoteStorageService.deleteDailyFolder(it)
+                log.info { "Deleted remote folder $it." }
+            }
         }
     }
 }

@@ -37,10 +37,10 @@ class RetryingExecutor {
 
                 attemptNumber++
 
-                log.debug { "Attempt $attemptNumber" }
+                if (attemptNumber > 1) log.debug { "Attempt $attemptNumber" }
 
                 runBlocking {
-                    log.debug { "Delaying attempt $attemptNumber by $nextAttemptDelay" }
+                    if (!nextAttemptDelay.isZero) log.debug { "Delaying attempt $attemptNumber by $nextAttemptDelay" }
                     delay(nextAttemptDelay.toMillis())
 
                     nextAttemptDelay = Duration.ofMillis(initialRetryWaitInMillis * (2.0.pow(attemptNumber) - 1).toLong())

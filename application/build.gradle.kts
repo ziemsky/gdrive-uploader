@@ -169,6 +169,8 @@ docker {
     springBootApplication {
         applyPropertyIfProvided("docker.image", tag::set)
 
+        jvmArgs.set(listOf("-Xmx16m"))
+
         baseImage.set("openjdk:8-alpine")
     }
 
@@ -211,7 +213,7 @@ val dockerImageCopyCustomContext by tasks.registering(Copy::class) {
 }
 
 tasks.named<Sync>("dockerSyncBuildContext") {
-    dependsOn(dockerImageCopyCustomContext)
+    finalizedBy(dockerImageCopyCustomContext)
 }
 
 fun applyPropertyIfProvided(propertyName: String, action: (String) -> Unit) {

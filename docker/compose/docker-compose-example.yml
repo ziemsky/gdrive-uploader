@@ -40,6 +40,8 @@ services:
       - /var/opt/uploader/inbound:/app/inbound
 
     environment:
+      # When specifying any paths, keep in mind tht these are resolved _within the container_.
+
       # Enables generation of a log file.
       #
       # Optional; uncomment to enable logging into a file, in which case make sure to uncomment corresponding

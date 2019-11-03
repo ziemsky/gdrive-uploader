@@ -14,12 +14,23 @@ class GDriveDirectClient(private val drive: Drive) : GDriveClient {
         drive.files().create(gDriveFile, mediaContent).execute()
     }
 
-    override fun getTopLevelDailyFolders(): List<GDriveFolder> = drive
-            // https://developers.google.com/drive/api/v3/search-parameters
+    override fun getRootFolder(rootFolderName: String): GDriveFolder = drive
             .files()
             .list()
             .setSpaces("drive")
             .setQ("mimeType='$GOOGLE_DRIVE_FOLDER_MIMETYPE' and 'root' in parents")
+            .execute()
+            .files
+            ?.asSequence()
+            ?.map { file -> GDriveFolder(file.name, file.id) }
+            ?.first() ?: throw IllegalStateException("Root folder not found: ${rootFolderName}")
+
+    override fun childFoldersOf(parentFolder: GDriveFolder): List<GDriveFolder> = drive
+            // https://developers.google.com/drive/api/v3/search-parameters
+            .files()
+            .list()
+            .setSpaces("drive")
+            .setQ("mimeType='$GOOGLE_DRIVE_FOLDER_MIMETYPE' and '${parentFolder.id}' in parents")
             .execute()
             .files
             ?.asSequence()
@@ -31,10 +42,11 @@ class GDriveDirectClient(private val drive: Drive) : GDriveClient {
         drive.files().delete(remoteFolder.id).execute()
     }
 
-    override fun createTopLevelFolder(folderName: String): GDriveFolder {
+    override fun createTopLevelFolder(parentFolderId: String, folderName: String): GDriveFolder {
         val dir = File()
         dir.name = folderName
         dir.mimeType = GOOGLE_DRIVE_FOLDER_MIMETYPE
+        dir.parents = listOf(parentFolderId)
 
         val folderId = drive.files().create(dir).execute().id
 

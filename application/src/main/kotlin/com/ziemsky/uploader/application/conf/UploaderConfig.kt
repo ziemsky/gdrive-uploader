@@ -3,7 +3,7 @@ package com.ziemsky.uploader.application.conf
 import com.google.api.services.drive.Drive
 import com.ziemsky.uploader.securing.DomainEventsNotifier
 import com.ziemsky.uploader.securing.Janitor
-import com.ziemsky.uploader.securing.RemoteRepository
+import com.ziemsky.uploader.securing.RemoteStorageService
 import com.ziemsky.uploader.securing.Securer
 import com.ziemsky.uploader.securing.infrastructure.googledrive.*
 import com.ziemsky.uploader.securing.model.SecuredFileSummary
@@ -179,10 +179,10 @@ class UploaderConfig {
 
     @Bean
     internal fun securerService(
-            remoteRepository: RemoteRepository,
+            remoteStorageService: RemoteStorageService,
             @Suppress("SpringJavaInjectionPointsAutowiringInspection") domainEventsNotifier: DomainEventsNotifier,
             clock: Clock
-    ): Securer = Securer(remoteRepository, domainEventsNotifier, clock)
+    ): Securer = Securer(remoteStorageService, domainEventsNotifier, clock)
 
     @Bean
     internal fun drive(config: UploaderConfigProperties): Drive {
@@ -205,18 +205,18 @@ class UploaderConfig {
             )
 
     @Bean
-    internal fun repository(drive: Drive, gDriveClient: GDriveClient): RemoteRepository {
+    internal fun remoteStorageService(drive: Drive, gDriveClient: GDriveClient, config: UploaderConfigProperties): RemoteStorageService {
 
-        val gDriveRemoteRepository = GDriveRemoteRepository(drive, gDriveClient)
+        val gDriveRemoteStorageService = GDriveRemoteStorageService(gDriveClient, config.upload().rootFolderName())
 
-        gDriveRemoteRepository.init()
+        gDriveRemoteStorageService.init()
 
-        return gDriveRemoteRepository
+        return gDriveRemoteStorageService
     }
 
     @Bean
-    internal fun janitor(remoteRepository: RemoteRepository, config: UploaderConfigProperties): Janitor =
-            Janitor(remoteRepository, config.rotation().maxDailyFolders())
+    internal fun janitor(remoteStorageService: RemoteStorageService, config: UploaderConfigProperties): Janitor =
+            Janitor(remoteStorageService, config.rotation().maxDailyFolders())
 
     @Bean(name = [PollerMetadata.DEFAULT_POLLER])
     internal fun defaultPoller(): PollerMetadata =
@@ -238,12 +238,12 @@ class UploaderConfig {
 
     companion object {
 
-        private val BATCH_SIZE = 4
-        private val STATS_BATCH_SIZE = 1000
+        private val BATCH_SIZE = 10
+        private val STATS_BATCH_SIZE = 10
 
         private const val SECURED_FILES_CHANNEL = "securedFilesChannel"
         private const val REMOTE_DAILY_FOLDER_CREATED_CHANNEL = "remoteDailyFolderCreatedChannel"
 
-        private val POLLING_INTERVAL_IN_MILLIS = 100
+        private val POLLING_INTERVAL_IN_MILLIS = 1_000
     }
 }
