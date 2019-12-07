@@ -104,7 +104,7 @@ class UploaderConfig {
                                         { it.name },
                                         { leftFileName, rightFileName -> -1 * leftFileName.compareTo(rightFileName) }
                                 ))
-                                .patternFilter("*.jpg")
+                                .regexFilter(config.upload().fileNameRegex())
                 )
 
                 .transform(File::class.java, ::LocalFile)

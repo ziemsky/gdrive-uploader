@@ -69,10 +69,10 @@ class GDriveRemoteStorageService(val gDriveClient: GDriveClient, val rootFolderN
             throw IllegalArgumentException("Failed to upload; target folder ${targetDailyFolder.name} does not exist")
         }
 
-        log.debug { "Uploading ${localFile.path} into ${findFolderByName(targetDailyFolder.name)}" }
+        log.debug { "Uploading ${localFile.path()} into ${findFolderByName(targetDailyFolder.name)}" }
 
         val gDriveFile = com.google.api.services.drive.model.File()
-        gDriveFile.name = localFile.nameLocal.raw
+        gDriveFile.name = localFile.nameLocal().raw
         gDriveFile.parents = listOf(findFolderByName(targetDailyFolder.name)?.id)
 
 
@@ -80,11 +80,11 @@ class GDriveRemoteStorageService(val gDriveClient: GDriveClient, val rootFolderN
         // cache it in init() so that it is only retrieved once on app start
 
 
-        val mediaContent = FileContent(null, localFile.file)
+        val mediaContent = FileContent(null, localFile.raw())
 
         gDriveClient.upload(gDriveFile, mediaContent)
 
-        log.debug { "Uploaded ${localFile.path} into ${findFolderByName(targetDailyFolder.name)}" }
+        log.debug { "Uploaded ${localFile.path()} into ${findFolderByName(targetDailyFolder.name)}" }
 
         // todo media type
         // is metadata needed or will the client discover and populate it itself?")

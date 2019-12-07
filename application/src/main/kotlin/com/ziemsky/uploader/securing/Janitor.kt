@@ -9,7 +9,7 @@ class Janitor(private val remoteStorageService: RemoteStorageService, private va
 
     fun cleanupSecuredFile(localFile: LocalFile) {
         log.info { "Deleting $localFile." }
-        localFile.file.delete()
+        localFile.delete()
         log.info { "Deleted $localFile." }
     }
 

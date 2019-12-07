@@ -1,26 +1,39 @@
 package com.ziemsky.uploader.securing.model.local
 
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
-data class LocalFile(val file: File) {
+class LocalFile(private val file: File) {
 
-    val date: LocalDate = dateFromFileName(file)
+    fun date(): LocalDate = creationDateOf(file)
 
-    val path: Path = file.toPath()
+    fun nameLocal(): LocalFileName = LocalFileName(file.name)
 
-    val nameLocal: LocalFileName = LocalFileName(file.name)
+    fun path(): Path = file.toPath()
 
-    val sizeInBytes: Long = file.length()
+    fun sizeInBytes(): Long = file.length()
+
+    fun raw(): File = file
+
+    fun delete() { file.delete() }
+
+    override fun toString(): String {
+        return "LocalFile(file=$file)"
+    }
+
 
     companion object {
 
         @JvmStatic
-        private fun dateFromFileName(file: File): LocalDate = LocalDate.parse(
-                file.name.substring(0..7),
-                DateTimeFormatter.ofPattern("yyyyMMdd")
-        )
+        private fun creationDateOf(file: File): LocalDate =
+                Files.readAttributes(file.toPath(), BasicFileAttributes::class.java)
+                        .creationTime()
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
     }
 }

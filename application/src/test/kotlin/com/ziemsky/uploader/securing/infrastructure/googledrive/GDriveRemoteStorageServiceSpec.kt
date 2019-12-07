@@ -161,7 +161,7 @@ class GDriveRemoteStorageServiceSpec : BehaviorSpec() {
                             gDriveRemoteRepository.init()
 
                             val gDriveFile = com.google.api.services.drive.model.File()
-                            gDriveFile.name = localFile.nameLocal.raw
+                            gDriveFile.name = localFile.nameLocal().raw
                             gDriveFile.parents = listOf("folder_a_id")
 
                             every { gDriveClient.upload(any(), any()) } returns Unit
@@ -210,5 +210,5 @@ class GDriveRemoteStorageServiceSpec : BehaviorSpec() {
     }
 
     private fun MockKVerificationScope.fileContentWithMatchingName(localFile: LocalFile): FileContent =
-            match { it.file.name == localFile.nameLocal.raw }
+            match { it.file.name == localFile.nameLocal().raw }
 }

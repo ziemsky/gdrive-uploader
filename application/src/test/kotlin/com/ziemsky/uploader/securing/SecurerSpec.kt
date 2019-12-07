@@ -4,11 +4,11 @@ import com.ziemsky.uploader.UploaderAbstractBehaviourSpec
 import com.ziemsky.uploader.securing.model.SecuredFileSummary
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import io.mockk.verifyOrder
+import io.mockk.*
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.FileTime
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -26,10 +26,21 @@ class SecurerSpec : UploaderAbstractBehaviourSpec() {
 
             val securer = Securer(remoteStorageService, domainEventsNotifier, clock)
 
-            val localFile = LocalFile(File("20180901120000-00-front.jpg"))
+            val rawFile = File("20180901120000-00-front.jpg")
+            val localFile = LocalFile(rawFile)
 
-            val dailyFolder = RemoteDailyFolder.from(localFile.date)
+            val basicFileAttributes: BasicFileAttributes = mockk()
+            val creationTime: FileTime = FileTime.from(Instant.parse("2019-08-19T12:00:00Z"))
 
+            // We are touching File and Files here - which, normally, wouldn't be mocked and whose use would typically make
+            // a test like this an 'integrated' one - but we also need a control over the returned file creation time,
+            // which does require mocking (of a static method, in this case - oh, the horror!).
+            // For this reason, this test is classed as a unit test, after all.
+            mockkStatic(Files::class.java.name)
+            every { basicFileAttributes.creationTime() } returns creationTime
+            every { Files.readAttributes(rawFile.toPath(), BasicFileAttributes::class.java) } returns basicFileAttributes
+
+            val dailyFolder = RemoteDailyFolder.from("2019-08-19")
 
             And("remote target folder") {
 

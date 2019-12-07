@@ -24,5 +24,5 @@ class StatsCalculator {
     private fun totalFilesSizeInBytes(securedFileSummaries: Set<SecuredFileSummary>): Long =
             securedFileSummaries
                     .map(SecuredFileSummary::securedFile)
-                    .fold(0, { totalFilesSizeInBytes: Long, securedFile: LocalFile -> totalFilesSizeInBytes + securedFile.sizeInBytes })
+                    .fold(0, { totalFilesSizeInBytes: Long, securedFile: LocalFile -> totalFilesSizeInBytes + securedFile.sizeInBytes() })
 }

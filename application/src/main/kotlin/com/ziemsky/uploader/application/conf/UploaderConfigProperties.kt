@@ -29,6 +29,8 @@ interface Upload {
     fun retryTimeout(): Duration
 
     fun rootFolderName(): String
+
+    fun fileNameRegex(): String
 }
 
 interface Monitoring {
@@ -154,6 +156,8 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
 
         var retryTimeout: Duration = Duration.ofMinutes(5)
 
+        var fileNameRegex: String = ".+\\.(jpg|png|gif|mov|mp4|mpg)"
+
         lateinit var rootFolderName: String
 
         override fun maxConcurrentUploads(): Int = maxConcurrentUploads
@@ -161,6 +165,8 @@ class MutableUploaderConfigProperties : UploaderConfigProperties {
         override fun retryTimeout(): Duration = retryTimeout
 
         override fun rootFolderName(): String = rootFolderName
+
+        override fun fileNameRegex(): String = fileNameRegex
 
         override fun toString(): String {
             return "UploadProperties(maxConcurrentUploads=$maxConcurrentUploads, retryTimeout=$retryTimeout, rootFolderName='$rootFolderName')"

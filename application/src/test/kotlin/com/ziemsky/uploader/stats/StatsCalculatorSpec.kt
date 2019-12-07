@@ -86,8 +86,8 @@ class StatsCalculatorSpec() : UploaderAbstractBehaviourSpec() {
 
         val localFile: LocalFile = mockk()
 
-        every { localFile.nameLocal } returns LocalFileName(fileName)
-        every { localFile.sizeInBytes } returns fileSizeInBytes
+        every { localFile.nameLocal() } returns LocalFileName(fileName)
+        every { localFile.sizeInBytes() } returns fileSizeInBytes
 
         return SecuredFileSummary(
                 Instant.parse(uploadStart),

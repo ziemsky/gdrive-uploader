@@ -124,6 +124,7 @@ class UploaderSpec(
                     fle("20180911120000-05-front.jpg")
             )
 
+
             startApplication()
 
             When("files appear in the monitored location") {
@@ -182,8 +183,8 @@ class UploaderSpec(
 
                     val empty = create()
 
-                    eventually(2.minutes, UncheckedIOException::class.java) {
-                        eventually(2.minutes, AssertionFailedError::class.java) {
+                    eventually(1.minutes, UncheckedIOException::class.java) {
+                        eventually(1.minutes, AssertionFailedError::class.java) {
                             testFixtures.localStructure() shouldBe empty // todo FsStructure.EMPTY
                             testFixtures.remoteStructure(rootFolder.id) shouldBe remoteContentExpected
                         }

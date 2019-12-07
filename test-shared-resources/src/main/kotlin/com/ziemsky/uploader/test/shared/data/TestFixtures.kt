@@ -17,8 +17,10 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
 
@@ -267,10 +269,33 @@ class TestFixtures( // todo make local fixtures handled separately from remote?
 
         localContent?.saveIn(tempDirectory)
 
+        setCreationDatesForLocalContent(tempDirectory);
+
         moveDirContent(tempDirectory, testDirectory)
 
         tempDirectory.toFile().delete()
     }
+
+    /**
+     * fs-structure library does not support application of file attributes,
+     * but the Uploader now relies on file creation/modification date to determine daily folder,
+     * and so we have to set those dates directly here, to correspond to the dates expected in the tests.
+     */
+    fun setCreationDatesForLocalContent(dir: Path) {
+        Files.walk(dir)
+                .filter { path -> path.toFile().isFile }
+                .map(Path::toFile)
+                .forEach { file ->
+                    val fileCreationTime = LocalDateTime.parse(
+                            file.name.substring(0, 14),
+                            DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                    )
+
+                    Files.setAttribute(file.toPath(), "creationTime", FileTime.from(fileCreationTime.toInstant(ZoneOffset.UTC)))
+                    Files.setAttribute(file.toPath(), "lastModifiedTime", FileTime.from(fileCreationTime.toInstant(ZoneOffset.UTC)))
+                }
+    }
+
 
     fun localMonitoredDirEmpty(): Boolean {
         return testDirectory.toFile().listFiles().isEmpty()
