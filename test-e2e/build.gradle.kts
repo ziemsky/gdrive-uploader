@@ -61,7 +61,7 @@ val testContentTearDown by tasks.registering(Delete::class) {
     delete = setOf(testContentDir)
 }
 
-tasks.getByPath(":application:appStart").mustRunAfter(testContentSetUp)
+//tasks.getByPath(":application:appStart").mustRunAfter(testContentSetUp)
 testContentTearDown.get().mustRunAfter(":application:appStop")
 
 val test by tasks.getting(Test::class) {

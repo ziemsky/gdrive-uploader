@@ -36,7 +36,7 @@ dependencies {
     }
     implementation("ch.qos.logback:logback-classic")
 
-    testRuntime("com.fasterxml.jackson.core:jackson-databind")
+    testRuntimeOnly("com.fasterxml.jackson.core:jackson-databind")
 
     testImplementation("io.mockk:mockk")
 }

@@ -1,25 +1,5 @@
 rootProject.name = "uploader"
 
-val kotlinVersion = "1.3.61" // todo tie to the one in gradle.properties
-
-val springBootVersion = "2.2.0.RELEASE" // todo tie to the one in gradle.properties
-
-val pluginVersionsByIds = mapOf(
-        "org.springframework.boot" to springBootVersion,
-        "io.spring.dependency-management" to "1.0.8.RELEASE",
-        "com.github.johnrengelman.processes" to "0.5.0",
-        "com.dorongold.task-tree" to "1.3.1",
-        "com.github.ben-manes.versions" to "0.20.0",
-        "com.bmuschko.docker-spring-boot-application" to "5.2.0"
-)
-
-val pluginVersionsByNamespaces = mapOf(
-        "org.jetbrains.kotlin" to kotlinVersion,
-        "org.jetbrains.kotlin.plugin" to kotlinVersion
-)
-
-// todo try reducing both maps to one and rely on String.startsWith?
-
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -28,6 +8,26 @@ pluginManagement {
 
     resolutionStrategy {
         eachPlugin {
+            val kotlinVersion = "1.3.61" // todo tie to the one in gradle.properties
+
+            val springBootVersion = "2.2.0.RELEASE" // todo tie to the one in gradle.properties
+
+            // todo try reducing both maps to one and rely on String.startsWith?
+
+            val pluginVersionsByIds = mapOf(
+                    "org.springframework.boot" to springBootVersion,
+                    "io.spring.dependency-management" to "1.0.8.RELEASE",
+                    "com.github.johnrengelman.processes" to "0.5.0",
+                    "com.dorongold.task-tree" to "1.3.1",
+                    "com.github.ben-manes.versions" to "0.20.0",
+                    "com.bmuschko.docker-spring-boot-application" to "5.2.0"
+            )
+
+            val pluginVersionsByNamespaces = mapOf(
+                    "org.jetbrains.kotlin" to kotlinVersion,
+                    "org.jetbrains.kotlin.plugin" to kotlinVersion
+            )
+
             val pluginNamespace: String = requested.id.namespace ?: ""
             val pluginId: String = requested.id.toString()
 
