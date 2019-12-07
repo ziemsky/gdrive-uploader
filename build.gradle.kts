@@ -61,7 +61,7 @@ subprojects {
                 entry("kotlin-reflect")
             }
 
-            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0")
+            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2")
 
             dependencySet("org.springframework:$springVersion") {
                 entry("spring-web")

@@ -1,6 +1,6 @@
 rootProject.name = "uploader"
 
-val kotlinVersion = "1.3.50" // todo tie to the one in gradle.properties
+val kotlinVersion = "1.3.61" // todo tie to the one in gradle.properties
 
 val springBootVersion = "2.2.0.RELEASE" // todo tie to the one in gradle.properties
 
