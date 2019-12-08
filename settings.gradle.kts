@@ -12,8 +12,6 @@ pluginManagement {
 
             val springBootVersion = "2.2.0.RELEASE" // todo tie to the one in gradle.properties
 
-            // todo try reducing both maps to one and rely on String.startsWith?
-
             val pluginVersionsByIds = mapOf(
                     "org.springframework.boot" to springBootVersion,
                     "io.spring.dependency-management" to "1.0.8.RELEASE",
