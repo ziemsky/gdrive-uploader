@@ -43,6 +43,11 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
 }
 
+// todo move under control of com.ziemsky.uploader.test.e2e.UploaderSpec?
+// The app is stateful (caches folders) and needs cycling between e2e tests.
+// This means it's pointless to start and stop it just once per testing session, as it needs cycling between tests.
+// If that's the case, creation of temp folders could be done from within the test methods and the complexity of the
+// below tasks (and setting 'appStartArgs') could be avoided.
 val testContentDir = createTempDir("uploader-e2e-test_", ".tmp")
 
 val testContentSetUp by tasks.registering(Task::class) {
@@ -61,9 +66,6 @@ val testContentTearDown by tasks.registering(Delete::class) {
     delete = setOf(testContentDir)
 }
 
-//tasks.getByPath(":application:appStart").mustRunAfter(testContentSetUp)
-testContentTearDown.get().mustRunAfter(":application:appStop")
-
 val test by tasks.getting(Test::class) {
     useJUnitPlatform()
 
@@ -73,12 +75,10 @@ val test by tasks.getting(Test::class) {
 
     dependsOn(
             testContentSetUp.get()
-            // tasks.getByPath(":application:appStart")
     )
 
     finalizedBy(
             testContentTearDown.get()
-            // tasks.getByPath(":application:appStop")
     )
 }
 

@@ -1,5 +1,4 @@
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
-import com.github.jengelman.gradle.plugins.processes.tasks.JavaFork
 import org.awaitility.kotlin.await
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import java.util.concurrent.TimeUnit.SECONDS
@@ -19,8 +18,6 @@ plugins {
     kotlin("plugin.spring")
 
     id("org.springframework.boot")
-
-    id("com.github.johnrengelman.processes")
 
     id("com.bmuschko.docker-spring-boot-application")
 }
@@ -67,11 +64,41 @@ dependencies {
     testImplementation("io.mockk:mockk")
 }
 
-// TASKS
+// todo document in readme
+// https://bmuschko.github.io/gradle-docker-plugin/#getting_started
+// https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+// https://docs.docker.com/docker-hub/access-tokens/
 
-val test by tasks.getting(Test::class) {
-    useJUnitPlatform()
+docker {
+
+    // Make sure to use JVM <= 11 when using Docker plugin;
+    // as of 2019-12-08 docker plugin doesn't support Java > 11: https://bmuschko.github.io/gradle-docker-plugin/
+
+    springBootApplication {
+        applyPropertyIfProvided("docker.image", tag::set)
+
+        jvmArgs.set(listOf("-Xmx32m"))
+
+        baseImage.set("openjdk:13-alpine")
+    }
+
+    registryCredentials {
+        // ideally should use tokens but the plugin does not support them, yet https://docs.docker.com/docker-hub/access-tokens/
+
+        applyPropertyIfProvided("docker.repo.url", url::set)
+        applyPropertyIfProvided("docker.repo.user.name", username::set)
+        applyPropertyIfProvided("docker.repo.user.pass", password::set)
+        applyPropertyIfProvided("docker.repo.user.email", email::set)
+    }
 }
+
+// TASKS
+tasks {
+
+
+    val test by getting(Test::class) {
+        useJUnitPlatform()
+    }
 
 // Spring Boot plugin disables task 'jar' but other modules depend on this file (look for dependencies
 // project(":application"), therefore we need to re-enable its creation.
@@ -86,134 +113,120 @@ val test by tasks.getting(Test::class) {
 //
 // See:
 // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/html/#packaging-executable-and-normal
-val jar by tasks.named<Jar>("jar") {
-    enabled = true
-    archiveBaseName.set("uploader")
-}
-tasks.named<BootJar>("bootJar") {
-    mustRunAfter(jar)
-    archiveBaseName.set("uploader")
-}
+    val jar by named<Jar>("jar") {
+        enabled = true
+        archiveBaseName.set("uploader")
+    }
+    named<BootJar>("bootJar") {
+        mustRunAfter(jar)
+        archiveBaseName.set("uploader")
+    }
 
-val pidFile = File(project.buildDir, "application.pid")
+    val pidFile = File(project.buildDir, "application.pid")
 
-val appStart by tasks.registering(JavaFork::class) {
-    group = "Application"
-    description = """Starts the application from the assembled JAR file as a background process.
+    register("appStart", Task::class) {
+        group = "Application"
+        description = """Starts the application from the assembled JAR file as a background process.
                   |  Use to run the app in the background for e2e tests; for normal run call bootRun task.
                   """.trimMargin()
 
-    main = "-jar"
+        doFirst {
+            val workingDir = rootProject.projectDir // config files specify paths relative to root project's dir
 
-    workingDir = rootProject.projectDir // config files specify paths relative to root project's dir
+            val runEnvironment = rootProject.findProperty("uploader.run.environment") as String
 
-    doFirst {
-        val runEnvironment = rootProject.findProperty("uploader.run.environment") as String
+            val configLocation = "${rootProject.projectDir}/conf/$runEnvironment/application.conf"
 
-        val configLocation = "${rootProject.projectDir}/config/$runEnvironment/"
+            val args = mutableListOf(
+                    "java",
+                    "-jar",
+                    "${project.buildDir}/libs/uploader.jar",
+                    "--spring.pid.file=${pidFile.path}",
+                    "--spring.pid.fail-on-write-error=true",
+                    "--spring.config.additional-location=$configLocation"
+            )
 
-        val arguments = mutableListOf(
-                "${project.buildDir}/libs/uploader.jar",
-                "--spring.pid.file=${pidFile.path}",
-                "--spring.pid.fail-on-write-error=true",
-                "--spring.config.additional-location=$configLocation"
-        )
+            args.addAll(parseAppStartArgs())
 
-        arguments.addAll(parseAppStartArgs())
+            val outputFile = File(project.buildDir,"uploader.log")
 
-        args(arguments)
+            logger.info("Starting process: ${args}")
+            val processBuilder = ProcessBuilder(args)
+            processBuilder.directory(workingDir)
+            processBuilder.redirectOutput(outputFile)
+            processBuilder.redirectError(outputFile)
+
+            val process = processBuilder.start()
+            logger.info("Process started with PID ${process.pid()}")
+        }
+
+        onlyIf {
+            !pidFile.exists()
+        }
+
+        doLast {
+            logger.info("Waiting for application to start (waiting for PID file ${pidFile.absolutePath} to show up).")
+
+            await.with()
+                    .pollDelay(1, SECONDS)
+                    .pollInterval(1, SECONDS)
+                    .timeout(10, SECONDS)
+                    .until({ pidFile.exists() })
+
+            logger.info("PID file found for process ${pidFile.readText()}; proceeding.")
+        }
+
+        dependsOn(named<BootJar>("bootJar"))
     }
 
-    onlyIf {
-        !pidFile.exists()
-    }
-
-    doLast {
-        logger.info("Waiting for application to start (waiting for PID file ${pidFile.absolutePath} to show up).")
-
-        await.with()
-                .pollDelay(1, SECONDS)
-                .pollInterval(1, SECONDS)
-                .timeout(10, SECONDS)
-                .until({ pidFile.exists() })
-    }
-
-    dependsOn(tasks.named<BootJar>("bootJar"))
-}
-
-val appStop by tasks.registering(Exec::class) {
-    group = "Application"
-    description = """Kills process identified by PID found in file application.pid.
+    register("appStop", Exec::class.java) {
+        group = "Application"
+        description = """Kills process identified by PID found in file application.pid.
                       |  Uses system command 'kill' which, currently, limits its use to Unix-based systems.
         """.trimMargin()
 
-    executable = "kill" // todo see https://github.com/profesorfalken/jProcesses for cross-platform kill
+        executable = "kill" // todo see https://github.com/profesorfalken/jProcesses for cross-platform kill
 
-    onlyIf {
-        pidFile.exists()
+        onlyIf {
+            pidFile.exists()
+        }
+
+        doFirst {
+            args(listOf(pidFile.readText()))
+        }
     }
 
-    doFirst {
-        args(listOf(pidFile.readText()))
-    }
-}
+    named<Dockerfile>("dockerCreateDockerfile") {
 
+        // the plugin creates dir /app and puts all application's components there
+        // copies content from application/build/docker - but each component has to be explicitly specified
 
-// todo document in readme
-// https://bmuschko.github.io/gradle-docker-plugin/#getting_started
-// https://docs.docker.com/engine/reference/commandline/login/#credentials-store
-// https://docs.docker.com/docker-hub/access-tokens/
-
-docker {
-
-    springBootApplication {
-        applyPropertyIfProvided("docker.image", tag::set)
-
-        jvmArgs.set(listOf("-Xmx16m"))
-
-        baseImage.set("openjdk:8-alpine")
-    }
-
-    registryCredentials {
-        // ideally should use tokens but the plugin does not support them, yet https://docs.docker.com/docker-hub/access-tokens/
-
-        applyPropertyIfProvided("docker.repo.url", url::set)
-        applyPropertyIfProvided("docker.repo.user.name", username::set)
-        applyPropertyIfProvided("docker.repo.user.pass", password::set)
-        applyPropertyIfProvided("docker.repo.user.email", email::set)
-    }
-}
-
-tasks.named<Dockerfile>("dockerCreateDockerfile") {
-
-    // the plugin creates dir /app and puts all application's components there
-    // copies content from application/build/docker - but each component has to be explicitly specified
-
-    runCommand("""
+        runCommand("""
         mkdir /app/config  ; \   
         mkdir /app/log     ; \    
         mkdir /app/inbound 
         """.trimIndent()
-    )
+        )
 
-    copyFile(
-            "config",
-            "config"
-    )
-}
+        copyFile(
+                "config",
+                "config"
+        )
+    }
 
-val dockerImageCopyCustomContext by tasks.registering(Copy::class) {
-    // adds custom content to the application/build/docker context dir
+    val dockerImageCopyCustomContext by registering(Copy::class) {
+        // adds custom content to the application/build/docker context dir
 
-    val sourceContextDir = "${rootProject.projectDir}/docker/context"
-    val actualContextDir = "${buildDir}/docker"
+        val sourceContextDir = "${rootProject.projectDir}/docker/context"
+        val actualContextDir = "${buildDir}/docker"
 
-    from(fileTree(sourceContextDir))
-    into(actualContextDir)
-}
+        from(fileTree(sourceContextDir))
+        into(actualContextDir)
+    }
 
-tasks.named<Sync>("dockerSyncBuildContext") {
-    finalizedBy(dockerImageCopyCustomContext)
+    named<Sync>("dockerSyncBuildContext") {
+        finalizedBy(dockerImageCopyCustomContext)
+    }
 }
 
 fun applyPropertyIfProvided(propertyName: String, action: (String) -> Unit) {

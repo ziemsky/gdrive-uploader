@@ -1,7 +1,6 @@
 package com.ziemsky.uploader.test.e2e
 
 import com.ziemsky.fsstructure.FsStructure.*
-import com.ziemsky.uploader.application.main
 import com.ziemsky.uploader.test.e2e.config.E2ETestConfig
 import com.ziemsky.uploader.test.shared.data.TestFixtures
 import io.kotlintest.*
@@ -57,7 +56,7 @@ class UploaderSpec(
                 "--uploader.rotation.maxDailyFolders=$maxDailyFolders"
         )
         log.info { "Starting application with args: ${args.joinToString(" ")}" }
-        main(args)
+        com.ziemsky.uploader.application.main(args)
     }
 
     init {
