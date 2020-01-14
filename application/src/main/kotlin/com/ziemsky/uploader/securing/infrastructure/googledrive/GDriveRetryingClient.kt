@@ -5,6 +5,7 @@ import com.google.api.client.http.FileContent
 import com.google.api.services.drive.model.File
 import com.ziemsky.uploader.securing.infrastructure.BlockingRetryingExecutor.Companion.retryOnException
 import com.ziemsky.uploader.securing.infrastructure.googledrive.model.GDriveFolder
+import java.net.SocketTimeoutException
 import java.time.Duration
 
 class GDriveRetryingClient(private val gDriveDirectClient: GDriveDirectClient, private val retryTimeout: Duration) : GDriveClient {
@@ -55,6 +56,7 @@ class GDriveRetryingClient(private val gDriveDirectClient: GDriveDirectClient, p
                                 && this[0].domain == "usageLimits"
                                 && this[0].reason == "userRateLimitExceeded"
                     }
+                            || throwable is SocketTimeoutException
                 },
                 timeout = retryTimeout,
                 actionOnExpiration = { throw TimeoutException("Giving up on retrying; timeout expired: $retryTimeout") },

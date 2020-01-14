@@ -13,6 +13,7 @@ import io.kotlintest.shouldThrow
 import io.kotlintest.specs.BehaviorSpec
 import io.kotlintest.tables.row
 import io.mockk.*
+import java.net.SocketTimeoutException
 import java.time.Duration
 
 class GDriveRetryingClientSpec : BehaviorSpec() {
@@ -143,35 +144,39 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
 
     private fun verifyRetryOnExceptionPredicate(actualRetryableExceptionPredicate: (Throwable) -> Boolean) {
 
-        val predicateSatisfyingException = GoogleJsonResponseExceptionParameters.RETRYABLE
-                .asException()
-
-        withClue("Exception was not deemed 'retryable' despite meeting expected criteria") {
-            actualRetryableExceptionPredicate.invoke(predicateSatisfyingException) shouldBe true
+        // @formatter:off
+        forall(
+                row(GoogleJsonResponseExceptionParameters.RETRYABLE.asException(), "GoogleJsonResponseException"),
+                row(SocketTimeoutException(),                                      "SocketTimeoutException")
+        ) { predicateSatisfyingException, exceptionDescription ->
+            withClue("Exception was not deemed 'retryable' despite meeting expected criteria") {
+                actualRetryableExceptionPredicate.invoke(predicateSatisfyingException) shouldBe true
+            }
         }
+        // @formatter:on
 
-
-        val wrongTypeException = IllegalAccessException()
-
-        val wrongStatusCodeException = GoogleJsonResponseExceptionParameters.RETRYABLE
-                .copy(httpResponseCode = 405)
-                .asException()
-
-        val wrongErrorInfoDomainException = GoogleJsonResponseExceptionParameters.RETRYABLE
-                .copy(errorInfoDomain = "invalidErrorInfoDomain")
-                .asException()
-
-        val wrongErrorInfoReasonException = GoogleJsonResponseExceptionParameters.RETRYABLE
-                .copy(errorInfoReason = "invalidErrorInfoReason")
-                .asException()
 
         // @formatter:off
         forall(
-                row(wrongTypeException,             "Exception of wrong type"),
-                row(wrongErrorInfoDomainException,  "Exception with wrong error info domain"),
-                row(wrongErrorInfoReasonException,  "Exception with wrong error info reason"),
-                row(wrongStatusCodeException,       "Exception with wrong HTTP response status code")
-        ) { exception, testCaseDescription ->
+                row("Exception of wrong type",
+                        IllegalAccessException()
+                ),
+                row("Exception with wrong error info domain",
+                        GoogleJsonResponseExceptionParameters.RETRYABLE
+                                .copy(errorInfoDomain = "invalidErrorInfoDomain")
+                                .asException()
+                ),
+                row("Exception with wrong error info reason",
+                        GoogleJsonResponseExceptionParameters.RETRYABLE
+                                .copy(errorInfoReason = "invalidErrorInfoReason")
+                                .asException()
+                ),
+                row("Exception with wrong HTTP response status code",
+                        GoogleJsonResponseExceptionParameters.RETRYABLE
+                                .copy(httpResponseCode = 405)
+                                .asException()
+                )
+        ) { testCaseDescription, exception ->
             withClue("$testCaseDescription was deemed 'retryable' despite not meeting expected criteria") {
                 actualRetryableExceptionPredicate.invoke(exception) shouldBe false
             }
