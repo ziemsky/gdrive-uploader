@@ -8,6 +8,7 @@ plugins {
     id("io.spring.dependency-management")
     id("com.dorongold.task-tree")
     id("com.github.ben-manes.versions")
+    id("com.palantir.git-version")
 }
 
 // todo document uploader.run.environment in readme
@@ -106,7 +107,7 @@ subprojects {
 
     tasks.withType<KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "12"
+            jvmTarget = "11"
             freeCompilerArgs = listOf("-Xjsr305=strict")
         }
     }
@@ -116,6 +117,10 @@ subprojects {
     }
 }
 
+// Project version generated based on git tags/commits, provided by plugin com.palantir.git-version
+// https://github.com/palantir/gradle-git-version/issues/188
+val gitVersion: groovy.lang.Closure<String> by extra
+version = gitVersion(mapOf ("prefix" to "version@"))
 
 tasks.getByPath(":application:check").mustRunAfter(":test-shared-resources:check")
 tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")

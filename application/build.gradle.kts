@@ -1,3 +1,4 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import org.awaitility.kotlin.await
 import org.springframework.boot.gradle.tasks.bundling.BootJar
@@ -111,13 +112,17 @@ tasks {
 //
 // See:
 // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/html/#packaging-executable-and-normal
+
+    val jarFileName = "uploader-${rootProject.version}"
+
     val jar by named<Jar>("jar") {
         enabled = true
-        archiveBaseName.set("uploader")
+        archiveBaseName.set(jarFileName)
     }
+
     named<BootJar>("bootJar") {
         mustRunAfter(jar)
-        archiveBaseName.set("uploader")
+        archiveBaseName.set(jarFileName)
     }
 
     val pidFile = File(project.buildDir, "application.pid")
@@ -138,10 +143,11 @@ tasks {
             val args = mutableListOf(
                     "java",
                     "-jar",
-                    "${project.buildDir}/libs/uploader.jar",
+                    "${project.buildDir}/libs/${jarFileName}.jar",
                     "--spring.pid.file=${pidFile.path}",
                     "--spring.pid.fail-on-write-error=true",
-                    "--spring.config.additional-location=$configLocation"
+                    "--spring.config.additional-location=$configLocation",
+                    "--logging.file.name=${System.getProperty("java.io.tmpdir")}/uploader.log"
             )
 
             args.addAll(parseAppStartArgs())
@@ -194,6 +200,10 @@ tasks {
         }
     }
 
+    named<DockerBuildImage>("dockerBuildImage") {
+        images.set(listOf("ziemsky/gdrive-uploader:${rootProject.version as String}"))
+    }
+
     named<Dockerfile>("dockerCreateDockerfile") {
 
         // the plugin creates dir /app and puts all application's components there
@@ -224,6 +234,10 @@ tasks {
 
     named<Sync>("dockerSyncBuildContext") {
         finalizedBy(dockerImageCopyCustomContext)
+    }
+
+    named<Copy>("processResources") { // from plugin 'java'
+        expand(rootProject.properties)
     }
 }
 

@@ -86,7 +86,8 @@ To be documented.
 
 # Development
 
-Prerequisites: JDK 8
+Prerequisites: JDK 11. The application runs find on JDK 13 but build has to run on max Java 11 as the Docker plugin
+used is not compatible with higher JDK versions.
 
 ## Running
 
