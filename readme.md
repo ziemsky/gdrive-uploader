@@ -86,7 +86,7 @@ To be documented.
 
 # Development
 
-Prerequisites: JDK 8
+Prerequisites: Tested on JDK 14. The application may or may not build or run on other JDK versions.
 
 ## Running
 

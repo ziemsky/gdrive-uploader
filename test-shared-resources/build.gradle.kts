@@ -16,13 +16,18 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging") {
         exclude(group = "org.jetbrains.kotlin")
+        exclude(group = "org.slf4j")
     }
     implementation("ch.qos.logback:logback-classic")
 
     // Google Drive client
     implementation("com.google.oauth-client:google-oauth-client-jetty")
-    implementation("com.google.apis:google-api-services-drive")
-    implementation("com.google.api-client:google-api-client")
+    implementation("com.google.apis:google-api-services-drive") {
+        exclude(group = "com.fasterxml.jackson.core")
+    }
+    implementation("com.google.api-client:google-api-client") {
+        exclude(group = "com.fasterxml.jackson.core")
+    }
 
     implementation(project(":application"))
 }

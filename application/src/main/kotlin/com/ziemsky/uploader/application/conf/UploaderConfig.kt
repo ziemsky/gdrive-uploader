@@ -88,6 +88,7 @@ class UploaderConfig {
     ): IntegrationFlow {
 
         // todo move logging out
+        log.info("                  application version: {}", env.getProperty("info.app.version"))
         log.info("                          current dir: {}", Paths.get(".").toAbsolutePath())
         log.info("    spring.config.additional-location: {}", env.getProperty("spring.config.additional-location"))
         log.info("               spring.config.location: {}", env.getProperty("spring.config.location"))

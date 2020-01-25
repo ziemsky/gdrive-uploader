@@ -19,6 +19,10 @@ dependencies {
         // to prevent io.kotest import older kotlin-stdlib-common
         exclude(group = "org.jetbrains.kotlin")
     }
+    testImplementation("io.kotest:kotest-runner-console-jvm") {
+        // to prevent io.kotest import older kotlin-stdlib-common
+        exclude(group = "org.jetbrains.kotlin")
+    }
     testImplementation("io.kotest:kotest-extensions-spring") {
         // to prevent io.kotest import older kotlin-stdlib-common
         exclude(group = "org.jetbrains.kotlin")
@@ -36,6 +40,7 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging") {
         exclude(group = "org.jetbrains.kotlin")
+        exclude(group = "org.slf4j")
     }
     implementation("ch.qos.logback:logback-classic")
 

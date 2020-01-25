@@ -8,16 +8,17 @@ pluginManagement {
 
     resolutionStrategy {
         eachPlugin {
-            val kotlinVersion = "1.3.70" // todo tie to the one in gradle.properties
+            val kotlinVersion: String by settings
 
-            val springBootVersion = "2.3.1.RELEASE" // todo tie to the one in gradle.properties
+            val springBootVersion: String by settings
 
             val pluginVersionsByIds = mapOf(
                     "org.springframework.boot" to springBootVersion,
                     "io.spring.dependency-management" to "1.0.9.RELEASE",
                     "com.dorongold.task-tree" to "1.3.1",
-                    "com.github.ben-manes.versions" to "0.20.0",
-                    "com.bmuschko.docker-spring-boot-application" to "6.4.0"
+                    "com.github.ben-manes.versions" to "0.28.0",
+                    "com.bmuschko.docker-spring-boot-application" to "6.4.0",
+                    "com.palantir.git-version" to "0.12.3"
             )
 
             val pluginVersionsByNamespaces = mapOf(
@@ -39,7 +40,7 @@ pluginManagement {
                     // Versions of plugins from namespace 'org.gradle' are implicitly configured by current version of
                     // Gradle used.
                 } else {
-                    logger.warn("No version configured in plugin management for id $pluginId in namespace $pluginNamespace")
+                    logger.warn("No version has been configured in plugin management for id $pluginId in namespace $pluginNamespace")
                 }
             }
         }
@@ -53,3 +54,5 @@ include(
         "test-shared-resources",
         "application"
 )
+
+includeBuild("git-semver-release-plugin")

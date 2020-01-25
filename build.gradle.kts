@@ -8,6 +8,8 @@ plugins {
     id("io.spring.dependency-management")
     id("com.dorongold.task-tree")
     id("com.github.ben-manes.versions")
+
+    id("com.ziemsky.gradle.git-semver-release-plugin")
 }
 
 // todo document uploader.run.environment in readme
@@ -61,22 +63,28 @@ subprojects {
                 entry("kotlin-reflect")
             }
 
-            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2")
+            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7")
 
             dependencySet("org.springframework:$springVersion") {
                 entry("spring-web")
-                entry("spring-test")
                 entry("spring-context")
                 entry("spring-integration")
             }
 
-            dependency("org.springframework.boot:spring-boot-test:$springBootVersion")
+            dependencySet("org.springframework.boot:$springBootVersion") {
+                entry("spring-boot-starter-integration")
+                entry("spring-boot-test")
+            }
 
-            dependency("io.github.microutils:kotlin-logging:1.6.23")
+            dependency("org.springframework.integration:spring-integration-file:$springVersion")
+
+
+            dependency("org.slf4j:slf4j-api:1.7.30")
+            dependency("io.github.microutils:kotlin-logging:1.8.0.1")
             dependency("ch.qos.logback:logback-classic:1.2.3")
 
             dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
-            dependency("com.typesafe:config:1.3.3")
+            dependency("com.typesafe:config:1.4.0")
 
             // Google Drive client
             dependency("com.google.oauth-client:google-oauth-client-jetty:$gDriveVersion")
@@ -87,6 +95,7 @@ subprojects {
                 entry("kotest-runner-junit5-jvm")
                 entry("kotest-property-jvm")
                 entry("kotest-extensions-spring")
+                entry("kotest-runner-console-jvm")
             }
 
             dependency("io.mockk:mockk:1.9")
@@ -115,7 +124,6 @@ subprojects {
         systemProperties["uploader.run.environment"] = rootProject.findProperty("uploader.run.environment")
     }
 }
-
 
 tasks.getByPath(":application:check").mustRunAfter(":test-shared-resources:check")
 tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")

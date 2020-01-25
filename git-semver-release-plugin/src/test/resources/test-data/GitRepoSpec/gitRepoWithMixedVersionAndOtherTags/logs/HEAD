@@ -1,0 +1,9 @@
+0000000000000000000000000000000000000000 0a15c88c5f69262d1220ef5da2fbf9d74f73e4dd Rafał Kociński <rk@ziemsky.com> 1593871189 +0100	commit (initial): Commit master-1
+0a15c88c5f69262d1220ef5da2fbf9d74f73e4dd 3496beaf1eaaeb878d449b88ffa8f3a1d84d91a7 Rafał Kociński <rk@ziemsky.com> 1593871223 +0100	commit: Commit master-2
+3496beaf1eaaeb878d449b88ffa8f3a1d84d91a7 3496beaf1eaaeb878d449b88ffa8f3a1d84d91a7 Rafał Kociński <rk@ziemsky.com> 1593871326 +0100	checkout: moving from master to branch-1
+3496beaf1eaaeb878d449b88ffa8f3a1d84d91a7 c1fee10892fe07a52767448a63c0a7c9406086e7 Rafał Kociński <rk@ziemsky.com> 1593871373 +0100	commit: Commit branch-1-1
+c1fee10892fe07a52767448a63c0a7c9406086e7 20f6fc3d70d25a97a6c87259bbada62503b5a313 Rafał Kociński <rk@ziemsky.com> 1593871428 +0100	commit: Commit branch-1-2
+20f6fc3d70d25a97a6c87259bbada62503b5a313 ccfbb0d2e7dc1cc78ff0fa0725342e7ff8c455dc Rafał Kociński <rk@ziemsky.com> 1593871436 +0100	commit: Commit branch-1-3
+ccfbb0d2e7dc1cc78ff0fa0725342e7ff8c455dc 3496beaf1eaaeb878d449b88ffa8f3a1d84d91a7 Rafał Kociński <rk@ziemsky.com> 1593871511 +0100	checkout: moving from branch-1 to master
+3496beaf1eaaeb878d449b88ffa8f3a1d84d91a7 09d7d137860780ab964b6acbd5326df1d0bf445e Rafał Kociński <rk@ziemsky.com> 1593871555 +0100	commit: Commit master-3
+09d7d137860780ab964b6acbd5326df1d0bf445e 5108bac82ce32c95abefa08fee4f6f51aefecaef Rafał Kociński <rk@ziemsky.com> 1593871565 +0100	commit: Commit master-4
