@@ -4,14 +4,14 @@ import com.google.api.client.http.FileContent
 import com.google.api.services.drive.model.File
 import com.ziemsky.uploader.securing.infrastructure.BlockingRetryingExecutor
 import com.ziemsky.uploader.securing.infrastructure.googledrive.model.GDriveFolder
-import io.kotlintest.IsolationMode
-import io.kotlintest.data.forall
-import io.kotlintest.matchers.types.shouldBeSameInstanceAs
-import io.kotlintest.matchers.withClue
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.BehaviorSpec
-import io.kotlintest.tables.row
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.data.blocking.forAll
+import io.kotest.data.row
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.*
 import java.net.SocketTimeoutException
 import java.time.Duration
@@ -145,7 +145,7 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
     private fun verifyRetryOnExceptionPredicate(actualRetryableExceptionPredicate: (Throwable) -> Boolean) {
 
         // @formatter:off
-        forall(
+        forAll(
                 row(GoogleJsonResponseExceptionParameters.RETRYABLE.asException(), "GoogleJsonResponseException"),
                 row(SocketTimeoutException(),                                      "SocketTimeoutException")
         ) { predicateSatisfyingException, exceptionDescription ->
@@ -157,7 +157,7 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
 
 
         // @formatter:off
-        forall(
+        forAll(
                 row("Exception of wrong type",
                         IllegalAccessException()
                 ),

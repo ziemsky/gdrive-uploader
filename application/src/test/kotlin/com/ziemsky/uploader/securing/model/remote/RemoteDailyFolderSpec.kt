@@ -1,13 +1,13 @@
 package com.ziemsky.uploader.securing.model.remote
 
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
-class RemoteDailyFolderSpec : BehaviorSpec ({
+class RemoteDailyFolderSpec : BehaviorSpec({
 
     Given("Date") {
 

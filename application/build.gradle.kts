@@ -56,10 +56,11 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    testImplementation("io.kotlintest:kotlintest-runner-junit5") {
-        // to prevent io.kotlintest import older kotlin-stdlib-common
+    testImplementation("io.kotest:kotest-runner-junit5-jvm") {
+        // to prevent io.kotest import older kotlin-stdlib-common
         exclude(group = "org.jetbrains.kotlin")
     }
+    testImplementation("io.kotest:kotest-property-jvm")
 
     testImplementation("io.mockk:mockk")
 }
@@ -71,15 +72,12 @@ dependencies {
 
 docker {
 
-    // Make sure to use JVM <= 11 when using Docker plugin;
-    // as of 2019-12-08 docker plugin doesn't support Java > 11: https://bmuschko.github.io/gradle-docker-plugin/
-
     springBootApplication {
-        applyPropertyIfProvided("docker.image", tag::set)
+        applyPropertyIfProvided("docker.image", images::add)
 
-        jvmArgs.set(listOf("-Xmx32m"))
+        jvmArgs.set(listOf("-Xmx32m")) // todo mem/JVM args as env vars + document; mem reqs. may depend on file size
 
-        baseImage.set("openjdk:13-alpine")
+        baseImage.set("openjdk:14-alpine")
     }
 
     registryCredentials {

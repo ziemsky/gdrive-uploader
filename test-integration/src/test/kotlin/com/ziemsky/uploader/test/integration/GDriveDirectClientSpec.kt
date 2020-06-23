@@ -10,8 +10,12 @@ import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
 import com.ziemsky.uploader.test.shared.data.TestFixtures
-import io.kotlintest.*
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.Matcher
+import io.kotest.matchers.MatcherResult
+import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import org.springframework.test.context.ContextConfiguration
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -185,12 +189,12 @@ class GDriveDirectClientSpec(val drive: Drive,
     }
 
     private fun containExactlyFoldersWithIdsInAnyOrder(vararg expectedFolderNames: String) = object: Matcher<List<GDriveFolder>> {
-        override fun test(actualFolders: List<GDriveFolder>): Result {
+        override fun test(actualFolders: List<GDriveFolder>): MatcherResult {
 
             val actualFolderIdsList = actualFolders.map(GDriveFolder::name).sorted()
             val expectedFoldersNamesList = expectedFolderNames.asList().sorted()
 
-            return Result (
+            return MatcherResult (
                     actualFolderIdsList == expectedFoldersNamesList,
                     "Should contain folders with names $expectedFoldersNamesList but was $actualFolderIdsList",
                     "Should not contain folders with names: $expectedFoldersNamesList but was $actualFolderIdsList"

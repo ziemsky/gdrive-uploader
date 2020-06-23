@@ -10,10 +10,10 @@ import com.ziemsky.uploader.stats.reporting.logging.StatsLogRenderer
 import com.ziemsky.uploader.stats.reporting.logging.StatsLogger
 import com.ziemsky.uploader.stats.reporting.logging.infrastructure.Slf4jStatsLogger
 import com.ziemsky.uploader.stats.reporting.logging.model.Line
-import io.kotlintest.IsolationMode
-import io.kotlintest.inspectors.forAll
-import io.kotlintest.shouldBe
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.inspectors.forAll
+import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import org.slf4j.LoggerFactory

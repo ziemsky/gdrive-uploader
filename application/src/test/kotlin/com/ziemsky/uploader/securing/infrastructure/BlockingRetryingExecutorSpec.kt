@@ -1,10 +1,10 @@
 package com.ziemsky.uploader.securing.infrastructure
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.matchers.collections.shouldContainExactly
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.delay
 import java.time.Duration

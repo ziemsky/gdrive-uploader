@@ -5,8 +5,8 @@ import com.ziemsky.uploader.UploaderAbstractBehaviourSpec
 import com.ziemsky.uploader.securing.model.SecuredFileSummary
 import com.ziemsky.uploader.securing.model.SecuredFilesBatchStats
 import com.ziemsky.uploader.stats.StatsCalculator
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk

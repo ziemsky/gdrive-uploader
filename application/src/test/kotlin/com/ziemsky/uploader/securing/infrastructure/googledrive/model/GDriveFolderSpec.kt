@@ -1,11 +1,12 @@
 package com.ziemsky.uploader.securing.infrastructure.googledrive.model
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.data.forall
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.BehaviorSpec
-import io.kotlintest.tables.row
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.data.forAll
+import io.kotest.data.row
+import io.kotest.matchers.shouldBe
+
 
 class GDriveFolderSpec : BehaviorSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -35,7 +36,7 @@ class GDriveFolderSpec : BehaviorSpec() {
                           | and with provided name and id
                           | """.trimMargin()) {
 
-                        forall(*validIds) { expectedId ->
+                        forAll(*validIds) { expectedId ->
                             val actualGDriveFolder = createNewInstance.invoke(validFolderName, expectedId)
 
                             actualGDriveFolder.id shouldBe expectedId
@@ -74,7 +75,7 @@ class GDriveFolderSpec : BehaviorSpec() {
 
                     Then("exception is thrown") {
 
-                        forall(*invalidGoogleDriveItemIds) { invalidGoogleDriveItemId, testCase ->
+                        forAll(*invalidGoogleDriveItemIds) { invalidGoogleDriveItemId, testCase ->
 
                             val actualException = shouldThrow<IllegalArgumentException> {
                                 createNewInstance.invoke(validFolderName, invalidGoogleDriveItemId)
@@ -106,7 +107,7 @@ class GDriveFolderSpec : BehaviorSpec() {
                           | and with provided name and id
                           | """.trimMargin()) {
 
-                        forall(*validFolderNameTestCases) { folderName ->
+                        forAll(*validFolderNameTestCases) { folderName ->
                             val actualGDriveFolder = createNewInstance.invoke(folderName, validGoogleDriveItemId)
 
                             actualGDriveFolder.id shouldBe validGoogleDriveItemId
@@ -138,7 +139,7 @@ class GDriveFolderSpec : BehaviorSpec() {
                     val createNewInstance = { name: String, id: String -> GDriveFolder(name, id) }
 
                     Then("exception is thrown") {
-                        forall(*invalidGoogleDriveFolderNames) { invalidFolderName, testCase ->
+                        forAll(*invalidGoogleDriveFolderNames) { invalidFolderName, testCase ->
 
                             val actualException = shouldThrow<IllegalArgumentException> {
                                 createNewInstance.invoke(invalidFolderName, validGoogleDriveItemId)

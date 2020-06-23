@@ -1,5 +1,5 @@
 jdk:
-  openjdk13
+  openjdk14
 before_install:
 - openssl aes-256-cbc
   -K $encrypted_71a31e1b077f_key

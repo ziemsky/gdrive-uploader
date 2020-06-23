@@ -5,11 +5,11 @@ import com.ziemsky.uploader.securing.infrastructure.googledrive.model.GDriveFold
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
 import com.ziemsky.uploader.securing.model.remote.RemoteFolderName
-import io.kotlintest.IsolationMode
-import io.kotlintest.assertSoftly
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.assertions.assertSoftly
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
 import io.mockk.MockKVerificationScope
 import io.mockk.every
 import io.mockk.mockk

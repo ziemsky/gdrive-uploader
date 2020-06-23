@@ -4,7 +4,7 @@ import com.ziemsky.uploader.UploaderAbstractBehaviourSpec
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.remote.RemoteDailyFolder
 import com.ziemsky.uploader.securing.model.remote.RemoteFolderName
-import io.kotlintest.shouldBe
+import io.kotest.matchers.shouldBe
 import java.time.LocalDate
 import java.util.*
 

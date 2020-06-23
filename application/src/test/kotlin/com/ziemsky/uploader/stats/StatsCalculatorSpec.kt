@@ -6,8 +6,8 @@ import com.ziemsky.uploader.securing.model.SecuredFileSummary
 import com.ziemsky.uploader.securing.model.SecuredFilesBatchStats
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.securing.model.local.LocalFileName
-import io.kotlintest.matchers.withClue
-import io.kotlintest.shouldBe
+import io.kotest.assertions.withClue
+import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import java.time.Duration

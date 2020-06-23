@@ -1,9 +1,9 @@
 package com.ziemsky.uploader.securing.model.local
 
-import io.kotlintest.assertSoftly
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.assertions.assertSoftly
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic

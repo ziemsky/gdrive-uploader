@@ -4,7 +4,7 @@ package com.ziemsky.uploader.stats.reporting.logging
 import com.ziemsky.uploader.UploaderAbstractBehaviourSpec
 import com.ziemsky.uploader.securing.model.SecuredFilesBatchStats
 import com.ziemsky.uploader.stats.reporting.logging.model.Line
-import io.kotlintest.shouldBe
+import io.kotest.matchers.shouldBe
 import java.time.Instant
 import java.util.stream.Collectors.joining
 

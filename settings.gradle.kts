@@ -8,16 +8,16 @@ pluginManagement {
 
     resolutionStrategy {
         eachPlugin {
-            val kotlinVersion = "1.3.61" // todo tie to the one in gradle.properties
+            val kotlinVersion = "1.3.70" // todo tie to the one in gradle.properties
 
-            val springBootVersion = "2.2.0.RELEASE" // todo tie to the one in gradle.properties
+            val springBootVersion = "2.3.1.RELEASE" // todo tie to the one in gradle.properties
 
             val pluginVersionsByIds = mapOf(
                     "org.springframework.boot" to springBootVersion,
-                    "io.spring.dependency-management" to "1.0.8.RELEASE",
+                    "io.spring.dependency-management" to "1.0.9.RELEASE",
                     "com.dorongold.task-tree" to "1.3.1",
                     "com.github.ben-manes.versions" to "0.20.0",
-                    "com.bmuschko.docker-spring-boot-application" to "5.2.0"
+                    "com.bmuschko.docker-spring-boot-application" to "6.4.0"
             )
 
             val pluginVersionsByNamespaces = mapOf(

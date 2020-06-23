@@ -1,8 +1,10 @@
-version: "3"
+version: "2.4"
 
 services:
   uploader:
     image: ziemsky/gdrive-uploader:latest
+    mem_limit: 34m
+    restart: always
 
     volumes:
       # Location of custom configuration file, overriding some or all configuration options.
@@ -39,7 +41,7 @@ services:
       #
       - /var/opt/uploader/inbound:/app/inbound
 
-    environment:
+    #environment:
       # When specifying any paths, keep in mind tht these are resolved _within the container_.
 
       # Enables generation of a log file.

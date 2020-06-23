@@ -3,8 +3,11 @@ package com.ziemsky.uploader.test.e2e
 import com.ziemsky.fsstructure.FsStructure.*
 import com.ziemsky.uploader.test.e2e.config.E2ETestConfig
 import com.ziemsky.uploader.test.shared.data.TestFixtures
-import io.kotlintest.*
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.assertions.timing.eventually
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.Spec
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
 import mu.KotlinLogging
 import org.opentest4j.AssertionFailedError
 import org.springframework.beans.factory.annotation.Value
@@ -12,6 +15,8 @@ import org.springframework.test.context.ContextConfiguration
 import java.io.UncheckedIOException
 import java.nio.file.Paths
 import java.util.*
+import kotlin.time.ExperimentalTime
+import kotlin.time.minutes
 
 private val log = KotlinLogging.logger {}
 
@@ -21,6 +26,7 @@ private const val maxDailyFolders = 4
  * Main end-to-end test ensuring that all layers integrate together, exercising only core,
  * most critical functionality, leaving testing edge cases to cheaper integration and unit tests.
  */
+@OptIn(ExperimentalTime::class)
 @ContextConfiguration(classes = [(E2ETestConfig::class)])
 // TODO this is now integration test (albeit integrating all layers, rather than just two as the rest of the
 //  integration tests in this module), focused on testing that Spring Integration flow is built correctly so
@@ -182,8 +188,8 @@ class UploaderSpec(
 
                     val empty = create()
 
-                    eventually(1.minutes, UncheckedIOException::class.java) {
-                        eventually(1.minutes, AssertionFailedError::class.java) {
+                    eventually(1.minutes, UncheckedIOException::class) {
+                        eventually(1.minutes, AssertionFailedError::class) {
                             testFixtures.localStructure() shouldBe empty // todo FsStructure.EMPTY
                             testFixtures.remoteStructure(rootFolder.id) shouldBe remoteContentExpected
                         }

@@ -1,30 +1,27 @@
 package com.ziemsky.uploader.securing.infrastructure
 
-import io.kotlintest.IsolationMode
-import io.kotlintest.properties.Gen
-import io.kotlintest.properties.forAll
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.property.arbitrary.arb
+import io.kotest.property.exhaustive.exhaustive
+import io.kotest.property.forAll
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit.MILLIS
-import kotlin.random.Random
 
 class BlockerSpec : BehaviorSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val executionDurationTolerance = Duration.of(50, MILLIS)
+    private val executionDurationTolerance = Duration.of(100, MILLIS)
 
     init {
 
         Given("positive duration to block for") {
 
-            val validIntervals = object : Gen<Duration> {
-
-                private val random = Random(Instant.now().toEpochMilli())
-
-                override fun random(): Sequence<Duration> = generateSequence { Duration.ofMillis(random.nextLong(2, 2000)) }
-
-                override fun constants(): Iterable<Duration> = listOf(Duration.ofMillis(1))
+            val validIntervals = arb { rs ->
+                generateSequence {
+                    Duration.ofMillis( rs.random.nextLong(2, 2000) )
+                }
             }
 
             When("asked to block") {
@@ -52,21 +49,15 @@ class BlockerSpec : BehaviorSpec() {
 
         Given("non-positive duration to block for") {
 
-            val nonPositiveIntervals = object : Gen<Duration> {
 
-                private val random = Random(Instant.now().toEpochMilli())
-
-                override fun random(): Sequence<Duration> = generateSequence { Duration.ofMillis(-random.nextLong(100, 2000)) }
-
-                override fun constants(): Iterable<Duration> = listOf(Duration.ofMillis(0))
-            }
+            val nonPositiveIntervals = listOf(-2000L, -1000L, -100L, 0L).map { i -> Duration.ofMillis(i) }.exhaustive()
 
             When("asked to block") {
 
                 val action = { duration:Duration -> Blocker.blockFor(duration) }
 
                 Then("executes action immediately") {
-                    forAll(3, nonPositiveIntervals) { givenDuration: Duration ->
+                    forAll(nonPositiveIntervals) { givenDuration: Duration ->
 
                         val momentStart = Instant.now()
 

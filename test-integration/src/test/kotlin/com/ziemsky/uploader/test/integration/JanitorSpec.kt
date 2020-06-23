@@ -6,9 +6,9 @@ import com.ziemsky.uploader.securing.Janitor
 import com.ziemsky.uploader.securing.model.local.LocalFile
 import com.ziemsky.uploader.test.integration.config.IntegrationTestConfig
 import com.ziemsky.uploader.test.shared.data.TestFixtures
-import io.kotlintest.Spec
-import io.kotlintest.shouldBe
-import io.kotlintest.specs.BehaviorSpec
+import io.kotest.core.spec.Spec
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import org.springframework.test.context.ContextConfiguration
 import java.io.File
