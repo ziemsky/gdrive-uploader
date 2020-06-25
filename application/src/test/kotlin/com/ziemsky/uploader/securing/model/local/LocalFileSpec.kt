@@ -51,11 +51,11 @@ class LocalFileSpec : BehaviorSpec({
             Then("Produces fully populated LocalFile instance") {
                 assertSoftly {
                     actualLocalFile shouldNotBe null
-                    actualLocalFile.date() shouldBe LocalDate.parse(fileCreationDate)
-                    actualLocalFile.nameLocal() shouldBe LocalFileName(expectedFileName)
-                    actualLocalFile.path() shouldBe expectedFilePath
-                    actualLocalFile.sizeInBytes() shouldBe expectedFileSize
-                    actualLocalFile.raw() shouldBe rawIncomingFile
+                    actualLocalFile.date shouldBe LocalDate.parse(fileCreationDate)
+                    actualLocalFile.nameLocal shouldBe LocalFileName(expectedFileName)
+                    actualLocalFile.path shouldBe expectedFilePath
+                    actualLocalFile.sizeInBytes shouldBe expectedFileSize
+                    actualLocalFile.raw shouldBe rawIncomingFile
                 }
             }
         }
@@ -78,6 +78,7 @@ class LocalFileSpec : BehaviorSpec({
     }
 
 
+    // todo test case: sizeInBytes captured when object created (returns original value even when file.length() starts returning 0
 
     // todo error when file is a dir?
     // todo should we test for other error cases? are they even likely, given this is an incoming, actual file?

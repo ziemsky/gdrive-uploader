@@ -9,22 +9,21 @@ import java.time.ZoneId
 
 class LocalFile(private val file: File) {
 
-    fun date(): LocalDate = creationDateOf(file)
+    val sizeInBytes: Long = file.length()
 
-    fun nameLocal(): LocalFileName = LocalFileName(file.name)
+    val date: LocalDate; get() = creationDateOf(file)
 
-    fun path(): Path = file.toPath()
+    val nameLocal: LocalFileName; get() = LocalFileName(file.name)
 
-    fun sizeInBytes(): Long = file.length()
+    val path: Path; get() = file.toPath()
 
-    fun raw(): File = file
+    val raw: File; get() = file
 
     fun delete() { file.delete() }
 
     override fun toString(): String {
         return "LocalFile(file=$file)"
     }
-
 
     companion object {
 

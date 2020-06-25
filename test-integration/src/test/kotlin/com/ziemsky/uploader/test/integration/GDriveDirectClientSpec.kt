@@ -169,10 +169,10 @@ class GDriveDirectClientSpec(val drive: Drive,
                 val existingDailyFolderId = testFixtures.findChildFolderIdByName(rootFolder.id, targetFolder.name.toString())
 
                 val gDriveFile = com.google.api.services.drive.model.File()
-                gDriveFile.name = localFile.nameLocal().raw
+                gDriveFile.name = localFile.nameLocal.raw
                 gDriveFile.parents = listOf(existingDailyFolderId)
 
-                val mediaContent = FileContent(null, localFile.raw())
+                val mediaContent = FileContent(null, localFile.raw)
 
                 When("uploading the file") {
 

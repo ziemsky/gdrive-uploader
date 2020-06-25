@@ -20,7 +20,7 @@ class Securer(
 
         log.info { "Securing $localFile." }
 
-        val dailyRepoFolder = RemoteDailyFolder.from(localFile.date())
+        val dailyRepoFolder = RemoteDailyFolder.from(localFile.date)
 
         val instantStart = now(clock)
 
@@ -36,7 +36,7 @@ class Securer(
 
     fun ensureRemoteDailyFolder(localFile: LocalFile) {
 
-        val dailyRepoFolderName = RemoteFolderName.from(localFile.date())
+        val dailyRepoFolderName = RemoteFolderName.from(localFile.date)
 
         if (remoteStorageService.isTopLevelFolderWithNameAbsent(dailyRepoFolderName)) {
             log.info { "Creating folder $dailyRepoFolderName." }

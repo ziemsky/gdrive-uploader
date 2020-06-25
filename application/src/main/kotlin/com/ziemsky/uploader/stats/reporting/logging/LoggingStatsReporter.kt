@@ -10,7 +10,6 @@ class LoggingStatsReporter(
 ) : StatsReporter {
 
     override fun reportStatsForSecuredFiles(securedFiles: Set<SecuredFileSummary>) {
-        securedFiles.toString()
 
         require(securedFiles.isNotEmpty()) { "Secured files summaries are required but none were provided." }
 
