@@ -28,6 +28,13 @@ class GitRepo private constructor(val gitRepoDir: Path) {
         return "GitRepo(dir=$gitRepoDir)"
     }
 
+    fun version(): String = repository { git ->
+        git.describe()
+                .setAlways(true)
+                .setTags(true)
+                .call()
+    }
+
     fun allTagsNames(): Set<String> {
         return repository { git: Git -> git.repository.refDatabase.getRefsByPrefix(R_TAGS) }
                 .map { it.name.removePrefix("refs/tags/") }

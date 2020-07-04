@@ -42,6 +42,16 @@ class GitRepoSpec : BehaviorSpec() {
                     )
                 }
             }
+
+            When("asked for current tag-calculated version") {
+
+                val actualTagCalculatedVersion = gitRepo.version()
+
+                Then("returns current tag-calculated version") {
+
+                    actualTagCalculatedVersion shouldBe "v0.0.0-1-g5108bac"
+                }
+            }
         }
     }
 
