@@ -1,6 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.nio.file.Paths
 
+
+
 plugins {
     java
     kotlin("jvm") apply false
@@ -8,8 +10,11 @@ plugins {
     id("io.spring.dependency-management")
     id("com.dorongold.task-tree")
     id("com.github.ben-manes.versions")
-    id("com.palantir.git-version")
+
+    id("com.ziemsky.gradle.gitversionreleaseplugin")
 }
+
+//apply<com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin>()
 
 // todo document uploader.run.environment in readme
 val defaultRunEnvironment = "local"
@@ -77,7 +82,7 @@ subprojects {
             dependency("ch.qos.logback:logback-classic:1.2.3")
 
             dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
-            dependency("com.typesafe:config:1.3.3")
+            dependency("com.typesafe:config:1.4.0")
 
             // Google Drive client
             dependency("com.google.oauth-client:google-oauth-client-jetty:$gDriveVersion")
@@ -107,7 +112,7 @@ subprojects {
 
     tasks.withType<KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "12"
             freeCompilerArgs = listOf("-Xjsr305=strict")
         }
     }
@@ -116,11 +121,6 @@ subprojects {
         systemProperties["uploader.run.environment"] = rootProject.findProperty("uploader.run.environment")
     }
 }
-
-// Project version generated based on git tags/commits, provided by plugin com.palantir.git-version
-// https://github.com/palantir/gradle-git-version/issues/188
-val gitVersion: groovy.lang.Closure<String> by extra
-version = gitVersion(mapOf ("prefix" to "version@"))
 
 tasks.getByPath(":application:check").mustRunAfter(":test-shared-resources:check")
 tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")

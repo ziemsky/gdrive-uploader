@@ -6,8 +6,9 @@
 ### Build ###
 build/
 !/buildSrc/src/main/**/build/
-.kotest/
-.kotlinest/
+.kotest
+.kotlintest
+*.hprof
 
 ### STS ###
 .apt_generated

@@ -8,17 +8,17 @@ pluginManagement {
 
     resolutionStrategy {
         eachPlugin {
-            val kotlinVersion = "1.3.70" // todo tie to the one in gradle.properties
+            val kotlinVersion: String by settings
 
-            val springBootVersion = "2.3.1.RELEASE" // todo tie to the one in gradle.properties
+            val springBootVersion: String by settings
 
             val pluginVersionsByIds = mapOf(
                     "org.springframework.boot" to springBootVersion,
                     "io.spring.dependency-management" to "1.0.9.RELEASE",
                     "com.dorongold.task-tree" to "1.3.1",
-                    "com.github.ben-manes.versions" to "0.20.0",
+                    "com.github.ben-manes.versions" to "0.28.0",
                     "com.bmuschko.docker-spring-boot-application" to "6.4.0",
-                    "com.palantir.git-version" to "0.12.2"
+                    "com.palantir.git-version" to "0.12.3"
             )
 
             val pluginVersionsByNamespaces = mapOf(
@@ -54,3 +54,9 @@ include(
         "test-shared-resources",
         "application"
 )
+
+includeBuild("gitversionreleaseplugin") {
+//    dependencySubstitution {
+//        substitute(module("com.ziemsky.gradle:gitversionreleaseplugin:0.1.0")).with(project(":"))
+//    }
+}
