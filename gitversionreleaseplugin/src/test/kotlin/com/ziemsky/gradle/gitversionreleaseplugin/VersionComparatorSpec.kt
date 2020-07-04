@@ -31,9 +31,9 @@ class VersionComparatorSpec : BehaviorSpec() {
 
             When("comparing versions from given pair") {
 
-                val comparator: (left: Version, right: Version) -> Int = { left: Version, right: Version -> VersionComparator.compare(left, right) }
+                val comparator = { left: Version, right: Version -> VersionComparator.compare(left, right) }
 
-                Then("returns comparison value according to semantics or major.minor.patch segments") {
+                Then("returns comparison value according to semantics of major.minor.patch segments") {
 
                     io.kotest.data.forAll(*testCases) { left: String, right: String, expectedResult: Int, testCaseDescription: String ->
                         val leftVersion = Version.from(left)

@@ -163,15 +163,14 @@ object VersionComparator : Comparator<Version> {
     override fun compare(left: Version, right: Version): Int {
 
         val majorResult = left.major.compareTo(right.major)
-        val minorResult = left.minor.compareTo(right.minor)
-        val patchResult = left.patch.compareTo(right.patch)
-
         if (majorResult > 0) return 1
         if (majorResult < 0) return -1
 
+        val minorResult = left.minor.compareTo(right.minor)
         if (minorResult > 0) return 1
         if (minorResult < 0) return -1
 
+        val patchResult = left.patch.compareTo(right.patch)
         if (patchResult > 0) return 1
         if (patchResult < 0) return -1
 
@@ -182,7 +181,7 @@ object VersionComparator : Comparator<Version> {
 data class Tag(
         val value: String
 ) {
-    companion object Factory {
+    companion object {
 
         fun from(name: String): Tag {
             return Tag(name)
