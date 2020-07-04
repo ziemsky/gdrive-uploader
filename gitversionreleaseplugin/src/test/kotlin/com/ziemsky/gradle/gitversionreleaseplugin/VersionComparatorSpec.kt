@@ -15,7 +15,7 @@ class VersionComparatorSpec : BehaviorSpec() {
 
             // @formatter:off
             val testCases = listOf(
-                    row("1.0.0", "0.2.3",  1, "L > R where on the left major is greater"                                      ),
+                    row("1.0.0", "0.1.1",  1, "L > R where on the left major is greater"                                      ),
                     row("0.1.0", "0.0.1",  1, "L > R where on the left major is not greater, minor greater"                   ),
                     row("0.1.1", "0.1.0",  1, "L > R where on the left major is not greater, minor not greater, patch greater"),
 
@@ -23,9 +23,9 @@ class VersionComparatorSpec : BehaviorSpec() {
                     row("1.1.1", "1.1.1",  0, "L = R where all positions are equal"                                           ),
                     row("2.2.2", "2.2.2",  0, "L = R where all positions are equal"                                           ),
 
-                    row("0.2.3", "1.0.0", -1, "L < R where on the left major is lesser"                                       ),
+                    row("0.1.1", "1.0.0", -1, "L < R where on the left major is lesser"                                       ),
                     row("0.0.1", "0.1.0", -1, "L < R where on the left major is not lesser, minor lesser"                     ),
-                    row("0.0.1", "0.1.0", -1, "L < R where on the left major is not greater, minor not lesser, patch lesser"  )
+                    row("0.1.0", "0.1.1", -1, "L < R where on the left major is not lesser, minor not lesser, patch lesser"   )
             ).toTypedArray()
             // @formatter:on
 
