@@ -45,24 +45,19 @@ class GitVersionReleasePlugin : Plugin<Project> {
             dependsOn.add(project.rootProject.tasks.withType<Test>())
 
             doLast {
-                println("releasing patch version")
-                println("CURRENT BRANCH: ${currentBranchName(project)}")
+                val newVersion = versionWithNextPatchNumber()
 
-                val versionWithNextPatchNumber = versionWithNextPatchNumber(project)
+                val newVersionTag = Tag.from(newVersion)
 
-                println("versionWithNextPatchNumber: $versionWithNextPatchNumber")
-
-                val tagWithNextPatchNumber = Tag.from(versionWithNextPatchNumber)
-
-                tagHeadCommitWith(versionWithNextPatchNumber)
+                tagHeadCommitWith(newVersionTag)
 
                 try {
-                    buildArtefactsWith(versionWithNextPatchNumber)
+                    buildArtefactsWith(newVersion)
                     publishArtefacts()
                     pushHeadTag()
 
                 } catch (e: Exception) {
-                    removeTag(tagWithNextPatchNumber)
+                    removeTag(newVersionTag)
                     depublishArtefacts()
                 }
             }
@@ -89,34 +84,25 @@ class GitVersionReleasePlugin : Plugin<Project> {
         TODO("Not yet implemented")
     }
 
-    private fun tagHeadCommitWith(version: Version) {
+    private fun tagHeadCommitWith(version: Tag) {
         TODO("Not yet implemented")
     }
 
-    private fun versionWithNextPatchNumber(project: Project): Version {
-        val latestVersionTag = latestVersionTag(project)
+    private fun versionWithNextPatchNumber(): Version = latestVersion().withNextPatchNumber()
 
-        return Version.from(latestVersionTag).withNextPatchNumber()
-    }
-
-    private fun latestVersionTag(project: Project): Tag {
-
-        // list all tags, sort and find the greatest
-//        repo.allTagsNames()
-//                .filter { it.startsWith("version@") }
-//                .map { Tag.from(it) }
-//                .map { Version.from(it) }
-//                .sortedBy { version: Version -> version. }
-
-        TODO("Not yet implemented")
-    }
+    private fun latestVersion(): Version = repo.allTagsNames()
+            .filter { Tag.isVersion(it) }
+            .map { Tag.from(it) }
+            .map { Version.from(it) }
+            .maxWith(VersionComparator)
+            ?: Version.ZERO
 
     private fun validateOnMaster(project: Project) {
 
         if (!project.hasProperty("ignoreMaster")) { // unofficial option, useful for development
-            require(onMaster(project), {
+            require(onMaster(project)) {
                 "This task can only operate when on master branch." // todo("make branch configurable")
-            })
+            }
         }
     }
 
@@ -131,7 +117,7 @@ class GitVersionReleasePlugin : Plugin<Project> {
     private fun repo(project: Project): Repository = Git.open(File(project.rootDir, ".git")).repository
 }
 
-data class Version(
+class Version private constructor(
         val major: Int,
         val minor: Int,
         val patch: Int
@@ -141,6 +127,8 @@ data class Version(
     fun withNextPatchNumber(): Version = Version(major, minor, patch + 1)
 
     companion object Factory {
+
+        val ZERO = Version(0,0,0)
 
         fun from(text: String): Version {
             val tagVersionComponents = text.split('.')
@@ -178,17 +166,16 @@ object VersionComparator : Comparator<Version> {
     }
 }
 
-data class Tag(
-        val value: String
-) {
+class Tag private constructor(val value: String) {
+
     companion object {
+        private val versionTagPattern = Regex.fromLiteral("version@\\d+\\.\\d+\\.d+\\")
 
-        fun from(name: String): Tag {
-            return Tag(name)
-        }
+        fun from(name: String): Tag = Tag(name)
 
-        fun from(version: Version): Tag {
-            return from("version@${version.major}.${version.minor}.${version.patch}")
-        }
+        fun from(version: Version): Tag =
+                from("version@${version.major}.${version.minor}.${version.patch}")
+
+        fun isVersion(tagName: String): Boolean = tagName.matches(versionTagPattern)
     }
 }
