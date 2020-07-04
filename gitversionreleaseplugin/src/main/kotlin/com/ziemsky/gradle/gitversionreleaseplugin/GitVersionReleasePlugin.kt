@@ -162,11 +162,21 @@ data class Version(
 object VersionComparator : Comparator<Version> {
     override fun compare(left: Version, right: Version): Int {
 
+        val majorResult = left.major.compareTo(right.major)
+        val minorResult = left.minor.compareTo(right.minor)
+        val patchResult = left.patch.compareTo(right.patch)
 
 
+        if (majorResult > 0) return 1
+        if (majorResult < 0) return -1
 
+        if (minorResult > 0) return 1
+        if (minorResult < 0) return -1
 
-        return 0;
+        if (patchResult > 0) return 1
+        if (patchResult < 0) return -1
+
+        return 0
     }
 }
 
