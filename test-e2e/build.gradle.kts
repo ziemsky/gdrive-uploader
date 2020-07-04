@@ -18,7 +18,11 @@ dependencies {
         // to prevent io.kotest import older kotlin-stdlib-common
         exclude(group = "org.jetbrains.kotlin")
     }
-    testImplementation("io.kotest:kotest-extensions-spring"){
+    testImplementation("io.kotest:kotest-runner-console-jvm") {
+        // to prevent io.kotest import older kotlin-stdlib-common
+        exclude(group = "org.jetbrains.kotlin")
+    }
+    testImplementation("io.kotest:kotest-extensions-spring") {
         // to prevent io.kotest import older kotlin-stdlib-common
         exclude(group = "org.jetbrains.kotlin")
     }

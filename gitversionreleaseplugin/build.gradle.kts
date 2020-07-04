@@ -24,6 +24,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5-jvm:4.1.0")
     testImplementation("io.kotest:kotest-property-jvm:4.1.0")
     testImplementation("io.kotest:kotest-extensions-spring:4.1.0")
+    testImplementation("io.kotest:kotest-runner-console-jvm:4.1.0")
 }
 
 tasks {

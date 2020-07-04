@@ -62,6 +62,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin")
     }
     testImplementation("io.kotest:kotest-property-jvm")
+    testImplementation("io.kotest:kotest-runner-console-jvm")
 
     testImplementation("io.mockk:mockk")
 }

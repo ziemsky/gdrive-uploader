@@ -55,8 +55,4 @@ include(
         "application"
 )
 
-includeBuild("gitversionreleaseplugin") {
-//    dependencySubstitution {
-//        substitute(module("com.ziemsky.gradle:gitversionreleaseplugin:0.1.0")).with(project(":"))
-//    }
-}
+includeBuild("gitversionreleaseplugin")

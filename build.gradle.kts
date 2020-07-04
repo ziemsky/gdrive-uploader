@@ -1,8 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.nio.file.Paths
 
-
-
 plugins {
     java
     kotlin("jvm") apply false
@@ -13,8 +11,6 @@ plugins {
 
     id("com.ziemsky.gradle.gitversionreleaseplugin")
 }
-
-//apply<com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin>()
 
 // todo document uploader.run.environment in readme
 val defaultRunEnvironment = "local"
@@ -93,6 +89,7 @@ subprojects {
                 entry("kotest-runner-junit5-jvm")
                 entry("kotest-property-jvm")
                 entry("kotest-extensions-spring")
+                entry("kotest-runner-console-jvm")
             }
 
             dependency("io.mockk:mockk:1.9")
