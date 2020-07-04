@@ -15,7 +15,8 @@ class GitVersionReleasePlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         this.project = project
-        repo = GitRepo.of(project.rootDir)
+
+        repo = GitRepo.at(project.rootDir)
 
 //      project.rootProject.version = "1.2.3"
 //
@@ -101,15 +102,11 @@ class GitVersionReleasePlugin : Plugin<Project> {
     private fun latestVersionTag(project: Project): Tag {
 
         // list all tags, sort and find the greatest
-
-//        repo(project).use {
-//            it.refDatabase
-//                    .getRefsByPrefix(R_TAGS)
-//                    .filter { Tag.isVersion(it.) }
-//                    .sortBy { it. }
-//
-//
-//        }
+//        repo.allTagsNames()
+//                .filter { it.startsWith("version@") }
+//                .map { Tag.from(it) }
+//                .map { Version.from(it) }
+//                .sortedBy { version: Version -> version. }
 
         TODO("Not yet implemented")
     }
@@ -144,19 +141,32 @@ data class Version(
     fun withNextPatchNumber(): Version = Version(major, minor, patch + 1)
 
     companion object Factory {
-        fun from(tag: Tag): Version {
 
-            val tagVersionComponents = tag.value
-                    .split('@')
-                    .last()
-                    .split('.')
+        fun from(text: String): Version {
+            val tagVersionComponents = text.split('.')
 
-            return Version (
+            return Version(
                     tagVersionComponents[0].toInt(),
                     tagVersionComponents[1].toInt(),
                     tagVersionComponents[2].toInt()
             )
         }
+
+        fun from(tag: Tag): Version {
+            return from(tag.value.split('@').last())
+        }
+    }
+
+}
+
+object VersionComparator : Comparator<Version> {
+    override fun compare(left: Version, right: Version): Int {
+
+
+
+
+
+        return 0;
     }
 }
 
@@ -164,8 +174,13 @@ data class Tag(
         val value: String
 ) {
     companion object Factory {
+
+        fun from(name: String): Tag {
+            return Tag(name)
+        }
+
         fun from(version: Version): Tag {
-            return Tag("version@${version.major}.${version.minor}.${version.patch}")
+            return from("version@${version.major}.${version.minor}.${version.patch}")
         }
     }
 }
