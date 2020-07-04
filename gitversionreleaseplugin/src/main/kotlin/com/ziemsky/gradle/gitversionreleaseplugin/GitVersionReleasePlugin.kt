@@ -166,7 +166,6 @@ object VersionComparator : Comparator<Version> {
         val minorResult = left.minor.compareTo(right.minor)
         val patchResult = left.patch.compareTo(right.patch)
 
-
         if (majorResult > 0) return 1
         if (majorResult < 0) return -1
 

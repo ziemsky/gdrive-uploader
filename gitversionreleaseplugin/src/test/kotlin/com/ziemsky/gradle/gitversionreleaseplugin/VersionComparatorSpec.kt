@@ -15,17 +15,17 @@ class VersionComparatorSpec : BehaviorSpec() {
 
             // @formatter:off
             val testCases = listOf(
-                    row("1.0.0", "0.2.3",  1, "L > R where major greater"                                      ),
-                    row("0.1.0", "0.0.1",  1, "L > R where major not greater, minor greater"                   ),
-                    row("0.1.0", "0.0.1",  1, "L > R where major not greater, minor not greater, patch greater"),
+                    row("1.0.0", "0.2.3",  1, "L > R where on the left major is greater"                                      ),
+                    row("0.1.0", "0.0.1",  1, "L > R where on the left major is not greater, minor greater"                   ),
+                    row("0.1.1", "0.1.0",  1, "L > R where on the left major is not greater, minor not greater, patch greater"),
 
-                    row("0.0.0", "0.0.0",  0, "L = R where all positions equal"                                ),
-                    row("1.1.1", "1.1.1",  0, "L = R where all positions equal"                                ),
-                    row("2.2.2", "2.2.2",  0, "L = R where all positions equal"                                ),
+                    row("0.0.0", "0.0.0",  0, "L = R where all positions are equal"                                           ),
+                    row("1.1.1", "1.1.1",  0, "L = R where all positions are equal"                                           ),
+                    row("2.2.2", "2.2.2",  0, "L = R where all positions are equal"                                           ),
 
-                    row("0.2.3", "1.0.0", -1, "L < R where major lesser"                                       ),
-                    row("0.0.1", "0.1.0", -1, "L < R where major not lesser, minor lesser"                     ),
-                    row("0.0.1", "0.1.0", -1, "L < R where major not greater, minor not lesser, patch lesser"  )
+                    row("0.2.3", "1.0.0", -1, "L < R where on the left major is lesser"                                       ),
+                    row("0.0.1", "0.1.0", -1, "L < R where on the left major is not lesser, minor lesser"                     ),
+                    row("0.0.1", "0.1.0", -1, "L < R where on the left major is not greater, minor not lesser, patch lesser"  )
             ).toTypedArray()
             // @formatter:on
 
