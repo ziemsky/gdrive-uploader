@@ -27,8 +27,6 @@ class GitRepoSpec : BehaviorSpec() {
 
             val gitRepo: GitRepo = repo("gitRepoWithMixedVersionAndOtherTags")
 
-            println("gitRepo: $gitRepo")
-
             When("asked for list of all tags") {
 
                 val allTags = gitRepo.allTagsNames()
