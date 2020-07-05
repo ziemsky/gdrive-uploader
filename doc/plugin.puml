@@ -1,0 +1,87 @@
+@startuml
+title Build and publish artefacts with current version
+
+start
+:Build is started with 'assembleArtefacts' task;
+
+:build init phase starts;
+
+:current version is read from git and calculated;
+note right
+What does this?
+Plugin provides methods
+to read the value from git.
+
+""(git describe --tags --always)"" + "".dirty""
+end note
+
+:calculated current version from git is set as project version;
+
+:build init phase ends;
+:build config phase starts;
+:build config phase ends;
+
+:build exec phase starts;
+
+:assembleArtefacts task executes;
+note right
+Reads version from Project object,
+and embeds it in the artefact.
+end note
+:build exec phase ends;
+
+stop
+@enduml
+
+
+
+
+@startuml
+title Release
+
+start
+:Build is started with 'releaseX' task;
+
+note right
+One of:
+- releaseMajor
+- releaseMinor
+- releasePatch
+end note
+
+:build init phase starts;
+
+:current version is read from git and calculated;
+
+:calculated current version from git is set as project version;
+
+:requested version segment increments;
+
+:incremented version is set as project version;
+note right
+What does this? How?
+Something needs to hook into task graph lifecycle,
+and do this:
+* only if Gradle deems 'releaseX' is among tasks to be actually executed
+* before any of the tasks that use version is actually executed (configured?)
+
+It could be that we need to do this in build config phase
+rather than in init, because only in config the actual tasks
+are selected for execution (?).
+end note
+
+:build init phase ends;
+
+:build config phase starts;
+:build config phase ends;
+
+:build exec phase starts;
+
+:assembleArtefacts task executes;
+note right
+Reads version from Project object,
+and embeds it in the artefact.
+end note
+
+stop
+@enduml
