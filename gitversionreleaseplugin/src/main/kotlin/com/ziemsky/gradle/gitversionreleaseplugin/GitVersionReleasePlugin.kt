@@ -4,6 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Repository
+import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.withType
 import java.io.File
@@ -12,15 +13,14 @@ class GitVersionReleasePlugin : Plugin<Project> {
 
     private lateinit var project: Project
     private lateinit var repo: GitRepo
+    private lateinit var logger: Logger
 
     override fun apply(project: Project) {
         this.project = project
+        this.logger = project.logger
+        this.repo = GitRepo.at(project.rootDir)
 
-        repo = GitRepo.at(project.rootDir)
-
-//      project.rootProject.version = "1.2.3"
-//
-//      println("ROOT PROJECT VERSION: ${project.rootProject.version}")
+        setCurentGitVersionOnRootProjectOf(project)
 
         project.task("releaseMajor") {
             doFirst { validateOnMaster(project) }
@@ -62,6 +62,20 @@ class GitVersionReleasePlugin : Plugin<Project> {
                 }
             }
         }
+
+        project.task("versionPrint") {
+            doLast {
+                logger.quiet("${project.rootProject.version}")
+            }
+        }
+    }
+
+    private fun reportCurrentProjectVersion() {
+        logger.quiet("${project.rootProject.version}")
+    }
+
+    private fun setCurentGitVersionOnRootProjectOf(project: Project) {
+        project.rootProject.version = currentGitVersion()
     }
 
     private fun depublishArtefacts() {
@@ -84,7 +98,9 @@ class GitVersionReleasePlugin : Plugin<Project> {
         TODO("Not yet implemented")
     }
 
-    private fun tagHeadCommitWith(version: Tag) {
+    private fun tagHeadCommitWith(tag: Tag) {
+        logger.info("Tagging with " + tag)
+
         TODO("Not yet implemented")
     }
 
@@ -115,6 +131,10 @@ class GitVersionReleasePlugin : Plugin<Project> {
     }
 
     private fun repo(project: Project): Repository = Git.open(File(project.rootDir, ".git")).repository
+
+    fun currentGitVersion(): String {
+        return repo.currentVersion()
+    }
 }
 
 class Version private constructor(
@@ -177,5 +197,9 @@ class Tag private constructor(val value: String) {
                 from("version@${version.major}.${version.minor}.${version.patch}")
 
         fun isVersion(tagName: String): Boolean = tagName.matches(versionTagPattern)
+    }
+
+    override fun toString(): String {
+        return "Tag(value='$value')"
     }
 }

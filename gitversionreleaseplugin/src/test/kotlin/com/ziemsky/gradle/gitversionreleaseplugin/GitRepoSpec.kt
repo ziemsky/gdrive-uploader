@@ -45,7 +45,7 @@ class GitRepoSpec : BehaviorSpec() {
 
             When("asked for current tag-calculated version") {
 
-                val actualTagCalculatedVersion = gitRepo.version()
+                val actualTagCalculatedVersion = gitRepo.currentVersion()
 
                 Then("returns current tag-calculated version") {
 

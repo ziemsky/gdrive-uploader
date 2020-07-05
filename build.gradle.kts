@@ -9,7 +9,7 @@ plugins {
     id("com.dorongold.task-tree")
     id("com.github.ben-manes.versions")
 
-//    id("com.ziemsky.gradle.gitversionreleaseplugin")
+    id("com.ziemsky.gradle.gitversionreleaseplugin")
 }
 
 // todo document uploader.run.environment in readme

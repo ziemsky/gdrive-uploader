@@ -40,7 +40,7 @@ pluginManagement {
                     // Versions of plugins from namespace 'org.gradle' are implicitly configured by current version of
                     // Gradle used.
                 } else {
-                    logger.warn("No version configured in plugin management for id $pluginId in namespace $pluginNamespace")
+                    logger.warn("No version has been configured in plugin management for id $pluginId in namespace $pluginNamespace")
                 }
             }
         }

@@ -24,21 +24,29 @@ class GitRepo private constructor(val gitRepoDir: Path) {
         }
     }
 
-    override fun toString(): String {
-        return "GitRepo(dir=$gitRepoDir)"
-    }
+    fun currentVersion(): String = repository { repo ->
 
-    fun version(): String = repository { git ->
-        git.describe()
+        val repoIsDirty = !repo.status().call().isClean
+
+        val versionFromGitVanilla = repo
+                .describe()
                 .setAlways(true)
                 .setTags(true)
                 .call()
-    }
 
+        val versionFromGitWithDirtyStatus = versionFromGitVanilla + if (repoIsDirty) ".dirty" else ""
+
+        versionFromGitWithDirtyStatus
+    }
     fun allTagsNames(): Set<String> {
         return repository { git: Git -> git.repository.refDatabase.getRefsByPrefix(R_TAGS) }
                 .map { it.name.removePrefix("refs/tags/") }
                 .toSet()
+    }
+
+
+    override fun toString(): String {
+        return "GitRepo(dir=$gitRepoDir)"
     }
 
     private fun <T> repository(function: (Git) -> T): T {
