@@ -27,29 +27,21 @@ class GitRepoSpec : BehaviorSpec() {
 
             val gitRepo: GitRepo = repo("gitRepoWithMixedVersionAndOtherTags")
 
-            When("asked for list of all tags") {
-
-                val allTags = gitRepo.allTagsNames()
-
-                Then("returns all tags") {
-
-                    allTags shouldBe setOf(
-                            "v0.0.0",
-                            "v0.1.0",
-                            "v10.1.0",
-                            "version@0.1.0",
-                            "version@0.2.0"
-                    )
-                }
-            }
-
             When("asked for current tag-calculated version") {
 
-                val actualTagCalculatedVersion = gitRepo.currentVersion()
+                val actualTagCalculatedVersion = gitRepo.currentVersion("v")
 
                 Then("returns current tag-calculated version") {
 
-                    actualTagCalculatedVersion shouldBe "v0.0.0-1-g5108bac"
+                    // todo all possible values from repo")
+                    // - no tag
+                    // - HEAD tagged (only prefix and semver will be present (and commit hash: setAlways(true) ?)
+                    // - when no tag, only commit hash will be present (?)
+                    // - isRepoDrity
+                    // - branches
+
+                    val expectedVersion = Ver.from("blhah", false)
+                    actualTagCalculatedVersion shouldBe expectedVersion
                 }
             }
         }

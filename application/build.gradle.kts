@@ -202,7 +202,7 @@ tasks {
     }
 
     named<DockerBuildImage>("dockerBuildImage") {
-        images.set(listOf("ziemsky/gdrive-uploader:${rootProject.version as String}"))
+        images.set(listOf("ziemsky/gdrive-uploader:${rootProject.version}"))
     }
 
     named<Dockerfile>("dockerCreateDockerfile") {

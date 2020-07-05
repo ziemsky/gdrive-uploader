@@ -1,7 +1,6 @@
 package com.ziemsky.gradle.gitversionreleaseplugin
 
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Constants.R_TAGS
 import java.io.File
 import java.nio.file.Path
 
@@ -24,24 +23,20 @@ class GitRepo private constructor(val gitRepoDir: Path) {
         }
     }
 
-    fun currentVersion(): String = repository { repo ->
+    fun currentVersion(versionTagPrefix: String): Ver = repository { repo ->
 
-        val repoIsDirty = !repo.status().call().isClean
+        val isRepoDirty = !repo.status().call().isClean
+
+        val versionTagGlobPattern = "$versionTagPrefix*"
 
         val versionFromGitVanilla = repo
-                .describe()
-                .setAlways(true)
-                .setTags(true)
+                .describe()                       // https://git-scm.com/docs/git-describe/2.6.7
+                .setAlways(true)                  // should there be no tags to derive the version for, display HEAD's hash
+                .setTags(true)                    // enables looking for lightweight tags as well as annotated ones (the latter is default)
+                .setMatch(versionTagGlobPattern)  // only consider tags matching the pattern: https://linux.die.net/man/7/glob
                 .call()
 
-        val versionFromGitWithDirtyStatus = versionFromGitVanilla + if (repoIsDirty) ".dirty" else ""
-
-        versionFromGitWithDirtyStatus
-    }
-    fun allTagsNames(): Set<String> {
-        return repository { git: Git -> git.repository.refDatabase.getRefsByPrefix(R_TAGS) }
-                .map { it.name.removePrefix("refs/tags/") }
-                .toSet()
+        Ver.from(versionFromGitVanilla, isRepoDirty)
     }
 
 
