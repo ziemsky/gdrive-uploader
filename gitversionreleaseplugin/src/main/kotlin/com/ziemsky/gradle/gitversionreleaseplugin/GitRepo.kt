@@ -25,8 +25,6 @@ class GitRepo private constructor(val gitRepoDir: Path) {
 
     fun currentVersion(versionTagPrefix: String): Ver = repository { repo ->
 
-        val isRepoDirty = !repo.status().call().isClean
-
         val versionTagGlobPattern = "$versionTagPrefix*"
 
         val versionFromGitVanilla = repo
@@ -36,9 +34,8 @@ class GitRepo private constructor(val gitRepoDir: Path) {
                 .setMatch(versionTagGlobPattern)  // only consider tags matching the pattern: https://linux.die.net/man/7/glob
                 .call()
 
-        Ver.from(versionFromGitVanilla, isRepoDirty)
+        Ver.from(versionFromGitVanilla, isDirty())
     }
-
 
     override fun toString(): String {
         return "GitRepo(dir=$gitRepoDir)"
@@ -47,4 +44,10 @@ class GitRepo private constructor(val gitRepoDir: Path) {
     private fun <T> repository(function: (Git) -> T): T {
         return Git.open(gitRepoDir.toFile()).use(function)
     }
+
+    fun currentBranchName(): String = repository { git -> git.repository.branch }
+
+    fun isClean(): Boolean = repository { git -> git.status().call().isClean }
+
+    fun isDirty() = !isClean()
 }

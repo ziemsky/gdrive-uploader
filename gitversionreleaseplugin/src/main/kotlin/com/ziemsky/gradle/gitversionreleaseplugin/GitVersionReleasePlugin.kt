@@ -3,12 +3,12 @@ package com.ziemsky.gradle.gitversionreleaseplugin
 import com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin.Companion.VERSION_TAG_PREFIX
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Repository
+import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.register
+
 import org.gradle.kotlin.dsl.withType
-import java.io.File
 
 class GitVersionReleasePlugin : Plugin<Project> {
 
@@ -17,94 +17,98 @@ class GitVersionReleasePlugin : Plugin<Project> {
     private lateinit var logger: Logger
 
     override fun apply(project: Project) {
-        this.project = project
+        this.project = project // todo is this safe? what if applied on sub-projects (new instance of the plugin created)?
         this.logger = project.logger
         this.repo = GitRepo.at(project.rootDir)
 
+        register(ReleaseTaskExecutionGraphListener(project, repo))
+
         setCurentGitVersionOnRootProjectOf(project)
 
-        project.task("releaseMajor") {
-            doFirst { validateReleasePreconditions(project) }
-
-            doLast {
-                println("releasing major version")
-            }
-        }
-
-        project.task("releaseMinor") {
-            doFirst { validateReleasePreconditions(project) }
-
-            doLast {
-                println("releasing minor version")
-            }
-        }
-
-        project.task("releasePatch") {
-
-            doFirst { validateReleasePreconditions(project) }
-
+        project.tasks.register("releaseMajor", GitVersionReleaseTask::class) {
+            versionSegmentIncrement = { ver: Ver -> ver.withNextMajorNumber() }
             dependsOn.add(project.rootProject.tasks.withType<Test>())
-
-            doLast {
-                val previousVersion = currentProjectVersion()
-
-                val newVersion = versionWithNextPatchNumber()
-
-                setProjectVersion(project, newVersion)
-
-                tagHeadCommitWith(newVersion)
-
-                try {
-                    buildArtefactsWith(newVersion)
-                    publishArtefacts()
-                    pushHeadTag()
-
-                } catch (e: Exception) {
-                    removeTag(newVersion)
-                    depublishArtefacts()
-                    setProjectVersion(project, previousVersion)
-                }
-            }
         }
+
+        project.tasks.register("releaseMinor", GitVersionReleaseTask::class) {
+            versionSegmentIncrement = { ver: Ver -> ver.withNextMinorNumber() }
+            dependsOn.add(project.rootProject.tasks.withType<Test>())
+        }
+
+        project.tasks.register("releasePatch", GitVersionReleaseTask::class) {
+            versionSegmentIncrement = { ver: Ver -> ver.withNextPatchNumber() }
+            dependsOn.add(project.rootProject.tasks.withType<Test>())
+        }
+
+//        project.task("releasePatch") {
+//
+//            doFirst { validateReleasePreconditions(project) }
+//
+//            dependsOn.add(project.rootProject.tasks.withType<Test>())
+//
+//            doLast {
+//                val previousVersion = currentProjectVersion()
+//
+//                val newVersion = versionWithNextPatchNumber()
+//
+//                setProjectVersion(project, newVersion)
+//
+//                tagHeadCommitWith(newVersion)
+//
+//                try {
+//                    buildArtefactsWith(newVersion)
+//                    publishArtefacts()
+//                    pushHeadTag()
+//
+//                } catch (e: Exception) {
+//                    removeTag(newVersion)
+//                    depublishArtefacts()
+//                    setProjectVersion(project, previousVersion)
+//                }
+//            }
+//        }
 
         project.task("versionPrint") {
             doLast {
-                logger.quiet("${project.rootProject.version}")
+                reportCurrentProjectVersion()
             }
         }
+    }
+
+    private fun register(taskExecutionGraphListener: TaskExecutionGraphListener) {
+        project.gradle.taskGraph.addTaskExecutionGraphListener(taskExecutionGraphListener)
+    }
+
+    private fun reportCurrentProjectVersion() = logger.quiet("${project.rootProject.version}")
+
+    private fun setCurentGitVersionOnRootProjectOf(project: Project) {
+        setProjectVersion(project, currentGitVersion())
     }
 
     private fun setProjectVersion(project: Project, newVersion: Ver) {
         project.rootProject.version = newVersion
     }
 
-    private fun reportCurrentProjectVersion() {
-        logger.quiet("${project.rootProject.version}")
-    }
-
-    private fun setCurentGitVersionOnRootProjectOf(project: Project) {
-        setProjectVersion(project, currentGitVersion())
-    }
-
-    private fun depublishArtefacts() {
-        TODO("Not yet implemented")
-    }
-
-    private fun removeTag(tag: Ver) {
-        TODO("Not yet implemented")
-    }
-
-    private fun pushHeadTag() {
-        TODO("Not yet implemented")
-    }
-
-    private fun publishArtefacts() {
-        TODO("Not yet implemented")
-    }
-
-    private fun buildArtefactsWith(version: Ver) {
-        TODO("Not yet implemented")
-    }
+//
+//    private fun depublishArtefacts() {
+//        TODO("Not yet implemented")
+//    }
+//
+//    private fun removeTag(tag: Ver) {
+//        TODO("Not yet implemented")
+//    }
+//
+//    private fun pushHeadTag() {
+//        TODO("Not yet implemented")
+//    }
+//
+//    private fun publishArtefacts() {
+//        TODO("Not yet implemented")
+//    }
+//
+//    private fun buildArtefactsWith(version: Ver) {
+//        TODO("Not yet implemented")
+//    }
 
     private fun tagHeadCommitWith(ver: Ver) {
         logger.info("Tagging with ${ver.gitVersionTag()}")
@@ -115,42 +119,6 @@ class GitVersionReleasePlugin : Plugin<Project> {
     private fun versionWithNextPatchNumber(): Ver = currentProjectVersion().withNextPatchNumber()
 
     private fun currentProjectVersion(): Ver = project.rootProject.version as Ver
-
-    private fun validateReleasePreconditions(project: Project) {
-        if (!project.hasProperty("ignorePreconditions")) { // unofficial option, useful in the plugin's development
-            // todo other preconditions configurable?
-
-            validateOnMaster(project)
-            validateCleanRepo()
-        }
-    }
-
-    private fun validateCleanRepo() {
-        require(isRepoClean(project)) {
-            "This task can only operate when there are no uncommitted changes."
-        }
-    }
-
-    private fun isRepoClean(project: Project): Boolean {
-        TODO("NOT IMPLEMENTED YET")
-    }
-
-    private fun validateOnMaster(project: Project) {
-        require(onMaster(project)) {
-            "This task can only operate when on main branch." // todo make branch configurable
-        }
-
-    }
-
-    private fun onMaster(project: Project): Boolean {
-        return "master" == currentBranchName(project)
-    }
-
-    private fun currentBranchName(project: Project): String {
-        return repo(project).use { repo -> repo.branch }
-    }
-
-    private fun repo(project: Project): Repository = Git.open(File(project.rootDir, ".git")).repository
 
     fun currentGitVersion(): Ver {
         return repo.currentVersion(VERSION_TAG_PREFIX)

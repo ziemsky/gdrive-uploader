@@ -2,10 +2,18 @@ package com.ziemsky.gradle.gitversionreleaseplugin
 
 import org.gradle.api.tasks.TaskAction
 
-class GitVersionReleaseTask : org.gradle.api.DefaultTask() {
+open class GitVersionReleaseTask : org.gradle.api.DefaultTask() {
+
+    lateinit var versionSegmentIncrement: (ver: Ver) -> Ver
 
     @TaskAction
-    fun action() {
-        println("task action invoked")
+    fun release() {
+        val currentProjectVersion = currentProjectVersion()
+        println("Tagging HEAD with ${currentProjectVersion.gitVersionTag()}")
+        println("Pushing tag ${currentProjectVersion.gitVersionTag()}")
+
+        TODO("tagging and pushing")
     }
+
+    private fun currentProjectVersion(): Ver = project.rootProject.version as Ver
 }
