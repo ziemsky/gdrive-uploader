@@ -25,6 +25,16 @@ class GitVersionReleasePlugin : Plugin<Project> {
 
         setCurentGitVersionOnRootProjectOf(project)
 
+        // TASKS FOR LOCALLY TRIGGERED RELEASES (1.0)
+
+        // developer simply executes one of these to trigger:
+        // - test
+        // - artefact assembly (dev has to declare dependsOn.add(assembleArtefacts)
+        // - artefact publication (dev has to declare dependsOn.add(publishArtefacts)
+        // - version increment
+        // - tag with version
+        // - push tag with version
+
         project.tasks.register("releaseMajor", GitVersionReleaseTask::class) {
             versionSegmentIncrement = { ver: Ver -> ver.withNextMajorNumber() }
             dependsOn.add(project.rootProject.tasks.withType<Test>())
@@ -39,6 +49,62 @@ class GitVersionReleasePlugin : Plugin<Project> {
             versionSegmentIncrement = { ver: Ver -> ver.withNextPatchNumber() }
             dependsOn.add(project.rootProject.tasks.withType<Test>())
         }
+
+        // don't
+        // Add support for argument that allows incrementing (reject decrement)
+        // version of given segment to given value. Normally, increment of higher
+        // segment would be called. If jump of several numbers is needed,
+        // this can be manually done through git tags. For this super-rare
+        // case it's not worth the effort.
+        //
+        // todo
+        // detect 'fast forward' and prevent merging if not fast forward?
+        // DOES THIS NEED SUPPORT FOR 'MERGE' TASK/ACTION (action as part of task 'release')?
+
+        // TASKS FOR CI/CD RELEASES (for ver. 2.0)
+
+        // Before raising pull request, developer calls one of tagAsMajorChange, tagAsMinorChange
+        // tagAsPatchChange.
+        //
+        // Merge is triggered on CI/CD server where hook calls 'release' task.
+        // 'release' task finds one of the major/minor/patch change and triggers
+        // action of corresponding releaseMajor, releaseMinor, releasePatch
+
+        // Set tags on HEAD marking given change as major/minor/patch
+        // these will be used by task 'release' to determine which
+        // semver component to increment.
+        // Calling one task removes tag set by another.
+        // project.tasks.register("tagAsMajorChange", GitChangeTagTask::class) {}
+        // project.tasks.register("tagAsMinorChange", GitChangeTagTask::class) {}
+        // project.tasks.register("tagAsPatchChange", GitChangeTagTask::class) {}
+
+        // Check tag on HEAD: majorChange-hash, minorChange-hash, patchChange-hash
+        // depending on the tag, increment corresponding version segment.
+        // NOTE: this needs to scan for tag earlier than HEAD on commits
+        // NOT INCLUDED in the target branch. Dev may have tagged, raised PR
+        // and then pushed additional commits after the PR.
+        //
+        // Lightweight tags or annotated?
+        //
+        // project.tasks.register("release", GitVersionReleaseTask::class) {
+        //
+        //     //
+        //     versionSegmentIncrement = { ver: Ver ->
+        //
+        //
+        //
+        //         // majorChange-hash -> ver.withNextMajorNumber()
+        //         // minorChange-hash -> ver.withNextMinorNumber()
+        //         // patchChange-hash -> ver.withNextPatchNumber()
+        //
+        //         ver
+        //     }
+        //     dependsOn.add(project.rootProject.tasks.withType<Test>())
+        // }
+
+
+
+
 
 //        project.task("releasePatch") {
 //
