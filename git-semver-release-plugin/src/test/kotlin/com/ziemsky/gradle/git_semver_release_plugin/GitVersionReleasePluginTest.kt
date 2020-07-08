@@ -1,6 +1,5 @@
 package com.ziemsky.gradle.git_semver_release_plugin
 
-import com.ziemsky.gradle.git_semver_release_plugin.GitVersionReleasePlugin
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -19,7 +18,7 @@ class GitVersionReleasePluginTest : BehaviorSpec() {
 
             When("Plugin is applied") {
 
-                project.pluginManager.apply(GitVersionReleasePlugin::class.java)
+                project.pluginManager.apply(GitSemverReleasePlugin::class.java)
 
                 Then("Tasks 'releaseMajor', 'releaseMinor', 'releasePatch', are added to the project") {
 

@@ -13,7 +13,7 @@ gradlePlugin {
     plugins {
         create("git-semver-release-plugin") {
             id = "com.ziemsky.gradle.git-semver-release-plugin"
-            implementationClass = "com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin"
+            implementationClass = "com.ziemsky.gradle.git_semver_release_plugin.GitSemverReleasePlugin"
         }
     }
 }

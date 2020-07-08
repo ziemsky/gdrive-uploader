@@ -4,6 +4,19 @@ import org.gradle.api.Project
 import org.gradle.api.execution.TaskExecutionGraph
 import org.gradle.api.execution.TaskExecutionGraphListener
 
+/**
+ * When it detects that a task of type [GitSemverReleaseTask]
+ * was selected for execution, it increments project's version.
+ *
+ * It increments segment of the version that corresponds to the task.
+ *
+ * Setting it in response to the task execution graph having been
+ * populated, i.e. before any task has actually been executed,
+ * the updated version is made available to tasks during their execution.
+ *
+ * For example, Docker image building task can now apply project's version
+ * as image's tag.
+ */
 class ReleaseTaskExecutionGraphListener(
         private val project: Project,
         private val repo: GitRepo
@@ -14,9 +27,19 @@ class ReleaseTaskExecutionGraphListener(
         if (releaseRequested(graph)) {
             validateReleasePreconditions(graph)
 
-            setNextProjectVersion(firstRequestedReleaseTask(graph).versionSegmentIncrement)
+            val nextProjectVersion = nextProjectVersion(graph)
+
+            reportProjectVersionIncrement(nextProjectVersion)
+
+            setNextProjectVersion(nextProjectVersion)
         }
     }
+
+    private fun reportProjectVersionIncrement(nextProjectVersion: (Ver) -> Ver) {
+        project.logger.info("Incrementing project version from ${currentProjectVersion()} to $nextProjectVersion")
+    }
+
+    private fun nextProjectVersion(graph: TaskExecutionGraph) = firstRequestedReleaseTask(graph).versionSegmentIncrement()
 
     private fun setNextProjectVersion(versionIncrementer: (ver: Ver) -> Ver) {
 
