@@ -1,4 +1,4 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
 object VersionComparator : Comparator<Version> { // todo still needed?
     override fun compare(left: Version, right: Version): Int {

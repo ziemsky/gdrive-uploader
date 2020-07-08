@@ -1,8 +1,8 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
 import org.gradle.api.tasks.TaskAction
 
-open class GitVersionReleaseTask : org.gradle.api.DefaultTask() {
+open class GitSemverReleaseTask : org.gradle.api.DefaultTask() {
 
     lateinit var versionSegmentIncrement: (ver: Ver) -> Ver
 

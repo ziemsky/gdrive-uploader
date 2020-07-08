@@ -1,4 +1,4 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
 import org.eclipse.jgit.api.Git
 import java.io.File

@@ -1,5 +1,6 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
+import com.ziemsky.gradle.git_semver_release_plugin.GitVersionReleasePlugin
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -22,7 +23,7 @@ class GitVersionReleasePluginTest : BehaviorSpec() {
 
                 Then("Tasks 'releaseMajor', 'releaseMinor', 'releasePatch', are added to the project") {
 
-                    val tasksNames = project.tasks.withType<GitVersionReleaseTask>().map { it.name }
+                    val tasksNames = project.tasks.withType<GitSemverReleaseTask>().map { it.name }
 
                     tasksNames shouldContainExactlyInAnyOrder listOf(
                             "releaseMajor",

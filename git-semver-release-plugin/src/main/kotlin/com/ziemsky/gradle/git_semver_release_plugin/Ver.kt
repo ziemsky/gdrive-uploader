@@ -1,6 +1,6 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
-import com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin.Companion.VERSION_TAG_PREFIX
+import com.ziemsky.gradle.git_semver_release_plugin.GitVersionReleasePlugin.Companion.VERSION_TAG_PREFIX
 
 
 // project.version according to Gradle docs (https://docs.gradle.org/current/dsl/org.gradle.api.Project.html#org.gradle.api.Project:version)

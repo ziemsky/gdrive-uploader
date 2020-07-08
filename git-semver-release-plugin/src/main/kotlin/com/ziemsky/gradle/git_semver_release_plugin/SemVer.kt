@@ -1,4 +1,4 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
 class SemVer private constructor(
         val major: Int,

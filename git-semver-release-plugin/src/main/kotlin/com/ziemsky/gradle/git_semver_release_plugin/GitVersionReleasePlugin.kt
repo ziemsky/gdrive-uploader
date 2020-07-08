@@ -1,13 +1,12 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
-import com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin.Companion.VERSION_TAG_PREFIX
+import com.ziemsky.gradle.git_semver_release_plugin.GitVersionReleasePlugin.Companion.VERSION_TAG_PREFIX
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.register
-
 import org.gradle.kotlin.dsl.withType
 
 class GitVersionReleasePlugin : Plugin<Project> {
@@ -35,17 +34,17 @@ class GitVersionReleasePlugin : Plugin<Project> {
         // - tag with version
         // - push tag with version
 
-        project.tasks.register("releaseMajor", GitVersionReleaseTask::class) {
+        project.tasks.register("releaseMajor", GitSemverReleaseTask::class) {
             versionSegmentIncrement = { ver: Ver -> ver.withNextMajorNumber() }
             dependsOn.add(project.rootProject.tasks.withType<Test>())
         }
 
-        project.tasks.register("releaseMinor", GitVersionReleaseTask::class) {
+        project.tasks.register("releaseMinor", GitSemverReleaseTask::class) {
             versionSegmentIncrement = { ver: Ver -> ver.withNextMinorNumber() }
             dependsOn.add(project.rootProject.tasks.withType<Test>())
         }
 
-        project.tasks.register("releasePatch", GitVersionReleaseTask::class) {
+        project.tasks.register("releasePatch", GitSemverReleaseTask::class) {
             versionSegmentIncrement = { ver: Ver -> ver.withNextPatchNumber() }
             dependsOn.add(project.rootProject.tasks.withType<Test>())
         }
@@ -206,7 +205,7 @@ class Version private constructor(
 
     companion object Factory {
 
-        val ZERO = Version(0,0,0)
+        val ZERO = Version(0, 0, 0)
 
         fun from(text: String): Version {
             val tagVersionComponents = text.split('.')

@@ -1,4 +1,4 @@
-package com.ziemsky.gradle.gitversionreleaseplugin
+package com.ziemsky.gradle.git_semver_release_plugin
 
 import org.gradle.api.Project
 import org.gradle.api.execution.TaskExecutionGraph
@@ -69,7 +69,7 @@ class ReleaseTaskExecutionGraphListener(
         }
     }
 
-    private fun releaseTasksRequested(graph: TaskExecutionGraph) = graph.allTasks.filterIsInstance(GitVersionReleaseTask::class.java)
+    private fun releaseTasksRequested(graph: TaskExecutionGraph) = graph.allTasks.filterIsInstance(GitSemverReleaseTask::class.java)
 
     private fun validateCleanRepo() = require(repo.isClean()) {
         "Cannot release because there are uncommitted changes. Commit or stash them and try again."
