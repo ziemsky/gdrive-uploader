@@ -55,4 +55,4 @@ include(
         "application"
 )
 
-includeBuild("gitversionreleaseplugin")
+includeBuild("git-semver-release-plugin")

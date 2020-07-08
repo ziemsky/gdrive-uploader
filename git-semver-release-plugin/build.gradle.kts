@@ -11,8 +11,8 @@ repositories {
 
 gradlePlugin {
     plugins {
-        create("gitversionreleaseplugin") {
-            id = "com.ziemsky.gradle.gitversionreleaseplugin"
+        create("git-semver-release-plugin") {
+            id = "com.ziemsky.gradle.git-semver-release-plugin"
             implementationClass = "com.ziemsky.gradle.gitversionreleaseplugin.GitVersionReleasePlugin"
         }
     }
