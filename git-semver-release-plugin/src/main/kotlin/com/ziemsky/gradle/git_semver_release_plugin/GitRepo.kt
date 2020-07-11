@@ -7,6 +7,7 @@ import org.eclipse.jgit.transport.Transport
 import org.eclipse.jgit.transport.JschConfigSessionFactory
 import org.eclipse.jgit.transport.OpenSshConfig
 import com.jcraft.jsch.Session
+import org.eclipse.jgit.lib.Ref
 
 import java.io.File
 import java.nio.file.Path
@@ -63,14 +64,14 @@ class GitRepo private constructor(val gitRepoDir: Path) {
 
     fun isCurrentBranch(branchName: String): Boolean = branchName.equals(currentBranchName())
 
-    private fun currentBranchName(): String = repository { git -> git.repository.branch }
+    private fun currentBranchName(): String = repository { it.repository.branch }
 
-    fun isClean(): Boolean = repository { git -> git.status().call().isClean }
+    fun isClean() = !isDirty()
 
-    fun isDirty() = !isClean()
+    fun isDirty(): Boolean = repository { it.status().call().hasUncommittedChanges() }
 
     fun tagHeadWithAnnotated(tagName: String) {
-        repository { git -> git
+        repository { it
                 .tag()
                 .setAnnotated(true)
                 .setName(tagName)
@@ -79,7 +80,7 @@ class GitRepo private constructor(val gitRepoDir: Path) {
     }
 
     fun pushTag(projectVersionTagName: String) {
-        repository { git -> git
+        repository { it
                 .push()
                 .add(projectVersionTagName)
                 .setTransportConfigCallback(transportConfigCallback)
@@ -87,9 +88,11 @@ class GitRepo private constructor(val gitRepoDir: Path) {
         }
     }
 
-    fun hasRemote(): Boolean = repository { git -> git
+    fun hasRemote(): Boolean = repository { it
                 .repository
                 .remoteNames
                 .isNotEmpty()
     }
+
+
 }

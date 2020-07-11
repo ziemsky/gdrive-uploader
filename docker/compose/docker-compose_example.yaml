@@ -28,7 +28,7 @@ services:
       #
       - /etc/uploader/google:/app/config/google
 
-      # Location of the log file.
+      # Location of the log file
       #
       # Optional. Uncomment to enable generation of the log file, in which case make sure to also uncomment
       # line with environment variable LOGGING_FILE_NAME under 'environment' below:

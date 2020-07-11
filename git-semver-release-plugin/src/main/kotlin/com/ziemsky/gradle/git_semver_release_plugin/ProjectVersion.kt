@@ -33,12 +33,34 @@ class ProjectVersion private constructor(
         return "$semVer$commitOffsetFragment$commitHashFragment$repoDirtyFragment"
     }
 
-    override fun toString(): String = value()
-
     // todo another factory method?
     fun withNextMajorNumber(): ProjectVersion = ProjectVersion(semVer.withNextMajorNumber(), 0, "", repoDirty)
     fun withNextMinorNumber(): ProjectVersion = ProjectVersion(semVer.withNextMinorNumber(), 0, "", repoDirty)
     fun withNextPatchNumber(): ProjectVersion = ProjectVersion(semVer.withNextPatchNumber(), 0, "", repoDirty)
+
+    override fun toString(): String = value()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ProjectVersion
+
+        if (semVer != other.semVer) return false
+        if (commitOffset != other.commitOffset) return false
+        if (commitHash != other.commitHash) return false
+        if (repoDirty != other.repoDirty) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = semVer.hashCode()
+        result = 31 * result + commitOffset
+        result = 31 * result + commitHash.hashCode()
+        result = 31 * result + repoDirty.hashCode()
+        return result
+    }
+
 
     companion object {
 
@@ -63,28 +85,42 @@ class ProjectVersion private constructor(
             }
         }
 
-        private fun projectVersionFromFullGitVersionTagName(gitVersionTagName: String, isRepoDirty: Boolean): ProjectVersion {
+        private fun projectVersionFromFullGitVersionTagName(
+                gitVersionTagName: String,
+                isRepoDirty: Boolean
+        ): ProjectVersion {
 
-            val projectVersionString = gitVersionTagName.trimStart(*VERSION_TAG_PREFIX.toCharArray())
+            // todo tag format validation
 
-            val projectVersionStringSegments = projectVersionString.split('-')
+            try {
+                val projectVersionString = gitVersionTagName.trimStart(*VERSION_TAG_PREFIX.toCharArray())
 
-            return ProjectVersion(
-                    semVer = SemVer.from(projectVersionStringSegments[0]),
-                    commitOffset = projectVersionStringSegments[1].toInt(),
-                    commitHash = projectVersionStringSegments[2],
-                    repoDirty = isRepoDirty
-            )
+                val segments = projectVersionString.split('-')
+
+                // todo relying on just the count and position may be brittle
+
+                return ProjectVersion(
+                        semVer = SemVer.from(segments[0]),
+                        commitOffset = if (segments.size > 1) segments[1].toInt() else 0,
+                        commitHash = if (segments.size > 2) segments[2] else "",
+                        repoDirty = isRepoDirty
+                )
+            } catch (e: Exception) {
+                throw RuntimeException(
+                        "Failed to parse project version from git tag: '$gitVersionTagName' for repo that is dirty: $isRepoDirty", e
+                )
+            }
         }
 
-        private fun projectVersionFromGitHash(gitVersionTagName: String, isRepoDirty: Boolean): ProjectVersion {
-            return ProjectVersion(
-                    semVer = DEFAULT_SEMVER,
-                    commitOffset = 0,
-                    commitHash = gitVersionTagName,
-                    repoDirty = isRepoDirty
-            )
-        }
+        private fun projectVersionFromGitHash(
+                gitVersionTagName: String,
+                isRepoDirty: Boolean
+        ): ProjectVersion = ProjectVersion(
+                semVer = DEFAULT_SEMVER,
+                commitOffset = 0,
+                commitHash = gitVersionTagName,
+                repoDirty = isRepoDirty
+        )
 
         private fun isGitHash(gitVersionTagName: String): Boolean =
                 GIT_HASH_REGEX.matches(gitVersionTagName)
