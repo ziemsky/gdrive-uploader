@@ -65,7 +65,7 @@ class GitRepo private constructor(val gitRepoDir: Path) {
 
     private fun currentBranchName(): String = repository { git -> git.repository.branch }
 
-    fun isClean(): Boolean = repository { git -> git.status().call().isClean }
+    fun isClean(): Boolean = repository { git -> git.status().call().hasUncommittedChanges() }
 
     fun isDirty() = !isClean()
 
