@@ -1,3 +1,5 @@
+import com.ziemsky.gradle.git_semver_release_plugin.GitSemverReleaseFullTask
+import com.ziemsky.gradle.git_semver_release_plugin.GitSemverReleaseTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.nio.file.Paths
 
@@ -129,3 +131,18 @@ tasks.getByPath(":application:check").mustRunAfter(":test-shared-resources:check
 tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")
 tasks.getByPath(":test-e2e:check").mustRunAfter(":test-integration:check")
 tasks.getByPath(":check").mustRunAfter(":test-e2e:check")
+
+tasks.withType<GitSemverReleaseTask> {
+    dependsOn.add(tasks.getByPath(":application:dockerPushImage"))
+}
+
+tasks.withType<GitSemverReleaseFullTask> {
+    dependsOn.add(tasks.withType<Test>())
+}
+
+    tasks.whenTaskAdded( object : Action<Any> {
+        override fun execute(t: Any) {
+            logger.quiet("ACTION: $t")
+        }
+    })
+

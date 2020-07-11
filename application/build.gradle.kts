@@ -3,6 +3,7 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import org.awaitility.kotlin.await
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION
 
 
 buildscript {
@@ -115,16 +116,22 @@ tasks {
 // See:
 // https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/html/#packaging-executable-and-normal
 
-    val jarFileName = "uploader-${rootProject.version}"
+    val jarFileName = "uploader"
 
     val jar by named<Jar>("jar") {
         enabled = true
         archiveBaseName.set(jarFileName)
+//        archiveVersion.set(rootProject.version.toString())
     }
 
     named<BootJar>("bootJar") {
         mustRunAfter(jar)
         archiveBaseName.set(jarFileName)
+//        archiveVersion.set(rootProject.version.toString())
+
+        manifest {
+            attributes(IMPLEMENTATION_VERSION.toString() to rootProject.version.toString())
+        }
     }
 
     val pidFile = File(project.buildDir, "application.pid")
@@ -203,7 +210,12 @@ tasks {
     }
 
     named<DockerBuildImage>("dockerBuildImage") {
-        images.set(listOf("ziemsky/gdrive-uploader:${rootProject.version}"))
+        images.set(listOf(
+                "ziemsky/gdrive-uploader:${rootProject.version}",
+                "ziemsky/gdrive-uploader:latest"
+        ))
+
+        mustRunAfter(rootProject.tasks.withType<Test>())
     }
 
     named<Dockerfile>("dockerCreateDockerfile") {

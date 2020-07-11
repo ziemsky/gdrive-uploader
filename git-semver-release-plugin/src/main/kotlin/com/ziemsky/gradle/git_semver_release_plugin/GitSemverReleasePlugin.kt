@@ -3,7 +3,6 @@ package com.ziemsky.gradle.git_semver_release_plugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.register
@@ -20,61 +19,103 @@ class GitSemverReleasePlugin : Plugin<Project> {
         this.logger = project.logger
         this.repo = GitRepo.at(project.rootDir)
 
-        registerTaskExecutionGraphListener(
-                VersionIncrementingReleaseTaskExecutionGraphListener(project)
-        )
+         requireMaxOneReleaseTaskRequested()
 
-        setCurentGitVersionOnRootProjectOf(project)
+        // todo handle version tag on HEAD:  - see requireNoVersionTagOnHead
 
-        project.tasks.register("releaseMajor", GitSemverReleaseMajorTask::class) {
+        initialiseVersionOnRootProject()
+
+        incrementProjectVersionIfRequested()
+
+        registerTasks()
+    }
+
+    private fun registerTasks() {
+
+        project.tasks.register(GitSemverReleaseMajorTask.name, GitSemverReleaseMajorTask::class) {
+            dependsOnTestTasks(this, project) // todo move into the task classes
+        }
+
+        project.tasks.register(GitSemverReleaseMinorTask.name, GitSemverReleaseMinorTask::class) {
             dependsOnTestTasks(this, project)
         }
 
-        project.tasks.register("releaseMinor", GitSemverReleaseMinorTask::class) {
+        project.tasks.register(GitSemverReleasePatchTask.name, GitSemverReleasePatchTask::class) {
             dependsOnTestTasks(this, project)
         }
 
-        project.tasks.register("releasePatch", GitSemverReleasePatchTask::class) {
+        project.tasks.register(GitSemverReleaseDevTask.name, GitSemverReleaseDevTask::class) {
             dependsOnTestTasks(this, project)
         }
 
-        project.tasks.register("releaseDev", GitSemverReleaseDevTask::class) {
-            dependsOnTestTasks(this, project)
-        }
-
-        project.task("versionPrint") {
+        project.tasks.register("versionPrint") {
             doLast {
                 reportCurrentProjectVersion()
             }
         }
     }
 
+    private fun incrementProjectVersionIfRequested() {
+
+        val releaseTaskCompanion = requestedReleaseTasksCompanion() ?: GitSemverReleaseDevTask.Companion
+
+        ProjectVersionIncrementer(project, repo).execute(releaseTaskCompanion)
+    }
+
+    private fun requestedReleaseTasksCompanion() = requestedReleaseTasksCompanions().singleOrNull()
+
+    private fun requestedReleaseTasksCompanions(): List<GitSemverReleaseTaskCompanion> =
+            ALL_RELEASE_TASK_COMPANIONS.filter { isTaskWithNameRequested(it.name) }
+
+    private fun isTaskWithNameRequested(candidateTaskName: String) =
+            project.gradle.startParameter.taskNames.contains(candidateTaskName)
+
     private fun dependsOnTestTasks(task: Task, project: Project) {
         task.dependsOn.add(project.rootProject.tasks.withType<Test>())
     }
 
-    private fun registerTaskExecutionGraphListener(taskExecutionGraphListener: TaskExecutionGraphListener) {
-        project.gradle.taskGraph.addTaskExecutionGraphListener(taskExecutionGraphListener)
-    }
-
     private fun reportCurrentProjectVersion() = logger.quiet("${project.rootProject.version}")
 
-    private fun setCurentGitVersionOnRootProjectOf(project: Project) {
-        setProjectVersion(project, currentGitVersion())
+    private fun initialiseVersionOnRootProject() {
+        setProjectVersion(currentGitVersion())
     }
 
-    private fun setProjectVersion(project: Project, newVersion: ProjectVersion) {
+    private fun setProjectVersion(newVersion: ProjectVersion) {
+
+        project.logger.info("Root project's version is $newVersion")
+
         project.rootProject.version = newVersion
     }
 
-    fun currentGitVersion(): ProjectVersion {
+    private fun currentGitVersion(): ProjectVersion {
 
         val versionTagName = repo.currentVersion(VERSION_TAG_PREFIX)
 
         return ProjectVersion.from(versionTagName, repo.isDirty())
     }
 
+    private fun requireMaxOneReleaseTaskRequested() {
+
+        val releaseTasksSelectedForExecution = requestedReleaseTasksCompanions()
+
+        val noMoreThanOneReleaseTaskFound = releaseTasksSelectedForExecution.size <= 1
+
+        require (noMoreThanOneReleaseTaskFound) {
+            val requestedReleaseTasksNames = releaseTasksSelectedForExecution.map { task -> task.name }.joinToString(", ")
+
+            "At most one release task can be requested at any given time; tasks actually requested: $requestedReleaseTasksNames"
+        }
+    }
+
     companion object {
-        val VERSION_TAG_PREFIX = "version@"   // todo move, make configurable
+
+        val VERSION_TAG_PREFIX = "version@"   // todo move?, make configurable
+
+        val ALL_RELEASE_TASK_COMPANIONS = listOf(
+                GitSemverReleaseMajorTask.Companion,
+                GitSemverReleaseMinorTask.Companion,
+                GitSemverReleasePatchTask.Companion,
+                GitSemverReleaseDevTask.Companion
+        )
     }
 }
