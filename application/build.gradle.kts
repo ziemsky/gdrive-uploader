@@ -212,7 +212,7 @@ tasks {
     named<DockerBuildImage>("dockerBuildImage") {
         images.set(listOf(
                 "ziemsky/gdrive-uploader:${rootProject.version}",
-                "ziemsky/gdrive-uploader:latest"
+                "ziemsky/gdrive-uploader:${project.properties["flag"]}"
         ))
 
         mustRunAfter(rootProject.tasks.withType<Test>())

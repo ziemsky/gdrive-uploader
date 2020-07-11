@@ -20,9 +20,16 @@ class GitSemverReleasePlugin : Plugin<Project> {
         this.logger = project.logger
         this.repo = GitRepo.at(project.rootDir)
 
-        registerTaskExecutionGraphListener(
-                VersionIncrementingReleaseTaskExecutionGraphListener(project)
-        )
+logger.quiet("PROJECT STATE: ${project.state}")
+logger.quiet("HAS TASK releaseMinor: ${project.gradle.startParameter.taskNames}")
+
+        if (project.gradle.startParameter.taskNames.contains("releaseMinor")) {
+            VersionIncrementer(project).execute { projectVersion -> projectVersion.withNextMinorNumber() }
+        }
+
+//        registerTaskExecutionGraphListener(
+//                VersionIncrementingReleaseTaskExecutionGraphListener(project)
+//        )
 
         setCurentGitVersionOnRootProjectOf(project)
 
@@ -64,6 +71,9 @@ class GitSemverReleasePlugin : Plugin<Project> {
     }
 
     private fun setProjectVersion(project: Project, newVersion: ProjectVersion) {
+
+        project.logger.quiet("Setting rootProject.version to $newVersion")
+
         project.rootProject.version = newVersion
     }
 

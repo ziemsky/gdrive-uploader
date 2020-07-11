@@ -2,41 +2,17 @@ package com.ziemsky.gradle.git_semver_release_plugin
 
 import org.gradle.api.Project
 import org.gradle.api.execution.TaskExecutionGraph
-import org.gradle.api.execution.TaskExecutionGraphListener
 
-/**
- * When it detects that a task of type [GitSemverReleaseTask]
- * was selected for execution, it increments project's version.
- *
- * It increments segment of the version that corresponds to the task.
- *
- * Setting it in response to the task execution graph having been
- * populated, i.e. before any task has actually been executed,
- * the updated version is made available to tasks during their execution.
- *
- * For example, Docker image building task can now apply project's version
- * as image's tag.
- */
-class VersionIncrementingReleaseTaskExecutionGraphListener(
+class VersionIncrementer(
         private val project: Project
-) : TaskExecutionGraphListener {
+) {
 
-    override fun graphPopulated(taskExecutionGraph: TaskExecutionGraph) {
-
-        val releaseTasksSelectedForExecution = releaseTasksIn(taskExecutionGraph)
-
-        if (releaseIsRequested(releaseTasksSelectedForExecution)) {
-
-            requireSingleReleaseTaskRegistered(releaseTasksSelectedForExecution)
-
-            val requestedReleaseTask = requestedReleaseTask(releaseTasksSelectedForExecution)
-
-            requireReleasePrerequisites(requestedReleaseTask)
+    fun execute(incrementer: (ProjectVersion) -> ProjectVersion) {
 
             applyNextProjectVersionUsing(
-                    requestedReleaseTask.versionSegmentIncrementer()
+                    incrementer
             )
-        }
+
     }
 
     private fun requireReleasePrerequisites(releaseTask: GitSemverReleaseTask) {
@@ -64,7 +40,14 @@ class VersionIncrementingReleaseTaskExecutionGraphListener(
     private fun requestedReleaseTask(releaseTasksSelectedForExecution: List<GitSemverReleaseTask>): GitSemverReleaseTask
             = releaseTasksSelectedForExecution.first()
 
-    private fun currentProjectVersion(): ProjectVersion = project.rootProject.version as ProjectVersion
+    private fun currentProjectVersion(): ProjectVersion {
+
+        return if (project.rootProject.version is ProjectVersion) {
+            project.rootProject.version as ProjectVersion
+        } else {
+            ProjectVersion.from("c5e1e2f", false)
+        }
+    }
 
 
     private fun setProjectVersion(newProjectVersion: ProjectVersion) {

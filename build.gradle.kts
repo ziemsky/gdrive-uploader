@@ -140,3 +140,9 @@ tasks.withType<GitSemverReleaseFullTask> {
     dependsOn.add(tasks.withType<Test>())
 }
 
+    tasks.whenTaskAdded( object : Action<Any> {
+        override fun execute(t: Any) {
+            logger.quiet("ACTION: $t")
+        }
+    })
+
