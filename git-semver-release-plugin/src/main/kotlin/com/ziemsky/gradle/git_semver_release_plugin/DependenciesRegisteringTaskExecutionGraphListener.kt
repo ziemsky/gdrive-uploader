@@ -8,11 +8,18 @@ class DependenciesRegisteringTaskExecutionGraphListener() : TaskExecutionGraphLi
 
     override fun graphPopulated(graph: TaskExecutionGraph) {
 
-        allReleaseTasks(graph).forEach { it.dependsOn.addAll(allTestTasks(graph)) }
+        allReleaseTasksIn(graph).forEach {
+            it.dependsOn.addAll(
+                    allCheckTasksIn(graph)
+            )
+        }
+
+        println("RELEASE TASKS: ${allReleaseTasksIn(graph)}")
+        println("TEST TASKS: ${allCheckTasksIn(graph)}")
     }
 
-    private fun allTestTasks(graph: TaskExecutionGraph) = graph.allTasks.filterIsInstance<Test>()
+    private fun allCheckTasksIn(graph: TaskExecutionGraph) = graph.allTasks.filter { it.name == "check" }
 
-    private fun allReleaseTasks(graph: TaskExecutionGraph) = graph.allTasks.filterIsInstance<GitSemverReleaseFullTask>()
+    private fun allReleaseTasksIn(graph: TaskExecutionGraph) = graph.allTasks.filterIsInstance<GitSemverReleaseFullTask>()
 
 }

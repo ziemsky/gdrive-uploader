@@ -132,17 +132,24 @@ tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")
 tasks.getByPath(":test-e2e:check").mustRunAfter(":test-integration:check")
 tasks.getByPath(":check").mustRunAfter(":test-e2e:check")
 
-tasks.withType<GitSemverReleaseTask> {
-    dependsOn.add(tasks.getByPath(":application:dockerPushImage"))
+tasks.withType<GitSemverReleaseTask> { dependsOn.add(tasks.getByPath(":application:dockerPushImage")) }
+
+tasks.withType<GitSemverReleaseFullTask> { dependsOn.addAll(allCheckTasks()) }
+
+tasks.getByPath(":application:dockerPushImage").mustRunAfter(":test-e2e:testContentTearDown")
+
+tasks.getByPath(":application:dockerPushImage").mustRunAfter(allCheckTasks())
+//tasks.getByPath(":application:dockerPushImage").mustRunAfter(allTestTasks())
+
+fun allTestTasks(): List<String> {
+    return rootProject.allprojects
+            .flatMap { project -> project.tasks.withType<Test>() }
+            .map { testTask -> testTask.path }
 }
 
-tasks.withType<GitSemverReleaseFullTask> {
-    dependsOn.add(tasks.withType<Test>())
+fun allCheckTasks(): List<String> {
+    return rootProject
+            .allprojects
+            .flatMap { project -> project.tasks.filter { it.name == "check" } }
+            .map { testTask -> testTask.path }
 }
-
-    tasks.whenTaskAdded( object : Action<Any> {
-        override fun execute(t: Any) {
-            logger.quiet("ACTION: $t")
-        }
-    })
-

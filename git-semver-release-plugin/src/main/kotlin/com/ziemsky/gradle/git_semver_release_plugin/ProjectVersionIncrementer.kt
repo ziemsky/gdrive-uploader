@@ -10,9 +10,8 @@ class ProjectVersionIncrementer(
     fun execute(releaseSupporter: GitSemverReleaseSupporter) {
 
         requireReleasePrerequisites(releaseSupporter.releaseTypeSpecificValidators)
-            applyNextProjectVersionUsing(
-                    releaseSupporter.versionSegmentIncrementer
-            )
+
+        applyNextProjectVersionUsing(releaseSupporter.versionSegmentIncrementer)
     }
 
     private fun requireReleasePrerequisites(releaseTask: List<(gitRepo: GitRepo) -> Unit>) {

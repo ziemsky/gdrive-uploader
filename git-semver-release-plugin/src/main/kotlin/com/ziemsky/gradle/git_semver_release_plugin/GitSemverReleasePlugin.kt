@@ -1,22 +1,20 @@
 package com.ziemsky.gradle.git_semver_release_plugin
 
+import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logger
-import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.withType
 
 class GitSemverReleasePlugin : Plugin<Project> {
 
-    private lateinit var project: Project
+    private lateinit var rootProject: Project
     private lateinit var repo: GitRepo
     private lateinit var logger: Logger
 
     override fun apply(project: Project) {
-        this.project = project
+        this.rootProject = project.rootProject
         this.logger = project.logger
         this.repo = GitRepo.at(project.rootDir)
 
@@ -30,27 +28,32 @@ class GitSemverReleasePlugin : Plugin<Project> {
 
         registerTasks()
 
-        registerTaskExecutionGraphListener(DependenciesRegisteringTaskExecutionGraphListener())
+//        registerTaskExecutionGraphListener(
+//                DependenciesRegisteringTaskExecutionGraphListener()
+//        )
+
+//        rootProject.gradle.addProjectEvaluationListener(DependenciesRegisteringProjectEvaluationListener())
     }
 
-    private fun registerTaskExecutionGraphListener(vararg taskExecutionGraphListener: TaskExecutionGraphListener) {
-
+    private fun registerTaskExecutionGraphListener(
+            vararg taskExecutionGraphListener: TaskExecutionGraphListener
+    ) {
         taskExecutionGraphListener.forEach {
-            project.rootProject.gradle.taskGraph.addTaskExecutionGraphListener(it)
+            rootProject.gradle.taskGraph.addTaskExecutionGraphListener(it)
         }
     }
 
     private fun registerTasks() {
 
-        project.tasks.register(GitSemverReleaseMajorTask.name, GitSemverReleaseMajorTask::class)
+        rootProject.tasks.register(GitSemverReleaseMajorTask.name, GitSemverReleaseMajorTask::class)
 
-        project.tasks.register(GitSemverReleaseMinorTask.name, GitSemverReleaseMinorTask::class)
+        rootProject.tasks.register(GitSemverReleaseMinorTask.name, GitSemverReleaseMinorTask::class)
 
-        project.tasks.register(GitSemverReleasePatchTask.name, GitSemverReleasePatchTask::class)
+        rootProject.tasks.register(GitSemverReleasePatchTask.name, GitSemverReleasePatchTask::class)
 
-        project.tasks.register(GitSemverReleaseDevTask.name, GitSemverReleaseDevTask::class)
+        rootProject.tasks.register(GitSemverReleaseDevTask.name, GitSemverReleaseDevTask::class)
 
-        project.tasks.register("versionPrint") {
+        rootProject.tasks.register("versionPrint") {
             doLast {
                 reportCurrentProjectVersion()
             }
@@ -61,7 +64,7 @@ class GitSemverReleasePlugin : Plugin<Project> {
 
         val releaseTaskCompanion = requestedReleaseTasksCompanion() ?: GitSemverReleaseDevTask.Companion
 
-        ProjectVersionIncrementer(project, repo).execute(releaseTaskCompanion)
+        ProjectVersionIncrementer(rootProject, repo).execute(releaseTaskCompanion)
     }
 
     private fun requestedReleaseTasksCompanion() = requestedReleaseTasksCompanions().singleOrNull()
@@ -70,13 +73,9 @@ class GitSemverReleasePlugin : Plugin<Project> {
             ALL_RELEASE_TASK_COMPANIONS.filter { isTaskWithNameRequested(it.name) }
 
     private fun isTaskWithNameRequested(candidateTaskName: String) =
-            project.gradle.startParameter.taskNames.contains(candidateTaskName)
+            rootProject.gradle.startParameter.taskNames.contains(candidateTaskName)
 
-    private fun dependsOnTestTasks(task: Task, project: Project) {
-        task.dependsOn.add(project.rootProject.tasks.withType<Test>()) // todo move to TaskExecutionGraphListener to register against test tasks of ALL projects - as it stands, only root's tests are invoked
-    }
-
-    private fun reportCurrentProjectVersion() = logger.quiet("${project.rootProject.version}")
+    private fun reportCurrentProjectVersion() = logger.quiet("${rootProject.version}")
 
     private fun initialiseVersionOnRootProject() {
         setProjectVersion(currentGitVersion())
@@ -84,9 +83,9 @@ class GitSemverReleasePlugin : Plugin<Project> {
 
     private fun setProjectVersion(newVersion: ProjectVersion) {
 
-        project.logger.info("Root project's version is $newVersion")
+        rootProject.logger.info("Root project's version is $newVersion")
 
-        project.rootProject.version = newVersion
+        rootProject.version = newVersion
     }
 
     private fun currentGitVersion(): ProjectVersion {
