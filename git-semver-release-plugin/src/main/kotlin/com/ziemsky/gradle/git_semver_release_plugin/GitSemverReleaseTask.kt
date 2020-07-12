@@ -135,12 +135,6 @@ open class GitSemverReleasePatchTask : GitSemverReleaseFullTask() {
 
 /**
  * No-op task.
- *
- * Purpose:
- * * search for release tasks by type can find it, in order to trigger
- *   version increment in configuration phase.
- * * consistency (all other release tasks have custom types),
- * * provide extension point for releaseDev-specific features
  */
 open class GitSemverReleaseDevTask : GitSemverReleaseTask() {
     init {

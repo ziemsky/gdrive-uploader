@@ -3,6 +3,7 @@ package com.ziemsky.gradle.git_semver_release_plugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.execution.TaskExecutionGraphListener
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.register
@@ -19,7 +20,7 @@ class GitSemverReleasePlugin : Plugin<Project> {
         this.logger = project.logger
         this.repo = GitRepo.at(project.rootDir)
 
-         requireMaxOneReleaseTaskRequested()
+        requireMaxOneReleaseTaskRequested()
 
         // todo handle version tag on HEAD:  - see requireNoVersionTagOnHead
 
@@ -28,25 +29,26 @@ class GitSemverReleasePlugin : Plugin<Project> {
         incrementProjectVersionIfRequested()
 
         registerTasks()
+
+        registerTaskExecutionGraphListener(DependenciesRegisteringTaskExecutionGraphListener())
+    }
+
+    private fun registerTaskExecutionGraphListener(vararg taskExecutionGraphListener: TaskExecutionGraphListener) {
+
+        taskExecutionGraphListener.forEach {
+            project.rootProject.gradle.taskGraph.addTaskExecutionGraphListener(it)
+        }
     }
 
     private fun registerTasks() {
 
-        project.tasks.register(GitSemverReleaseMajorTask.name, GitSemverReleaseMajorTask::class) {
-            dependsOnTestTasks(this, project) // todo move into the task classes
-        }
+        project.tasks.register(GitSemverReleaseMajorTask.name, GitSemverReleaseMajorTask::class)
 
-        project.tasks.register(GitSemverReleaseMinorTask.name, GitSemverReleaseMinorTask::class) {
-            dependsOnTestTasks(this, project)
-        }
+        project.tasks.register(GitSemverReleaseMinorTask.name, GitSemverReleaseMinorTask::class)
 
-        project.tasks.register(GitSemverReleasePatchTask.name, GitSemverReleasePatchTask::class) {
-            dependsOnTestTasks(this, project)
-        }
+        project.tasks.register(GitSemverReleasePatchTask.name, GitSemverReleasePatchTask::class)
 
-        project.tasks.register(GitSemverReleaseDevTask.name, GitSemverReleaseDevTask::class) {
-            dependsOnTestTasks(this, project)
-        }
+        project.tasks.register(GitSemverReleaseDevTask.name, GitSemverReleaseDevTask::class)
 
         project.tasks.register("versionPrint") {
             doLast {
@@ -71,7 +73,7 @@ class GitSemverReleasePlugin : Plugin<Project> {
             project.gradle.startParameter.taskNames.contains(candidateTaskName)
 
     private fun dependsOnTestTasks(task: Task, project: Project) {
-        task.dependsOn.add(project.rootProject.tasks.withType<Test>())
+        task.dependsOn.add(project.rootProject.tasks.withType<Test>()) // todo move to TaskExecutionGraphListener to register against test tasks of ALL projects - as it stands, only root's tests are invoked
     }
 
     private fun reportCurrentProjectVersion() = logger.quiet("${project.rootProject.version}")
@@ -100,7 +102,7 @@ class GitSemverReleasePlugin : Plugin<Project> {
 
         val noMoreThanOneReleaseTaskFound = releaseTasksSelectedForExecution.size <= 1
 
-        require (noMoreThanOneReleaseTaskFound) {
+        require(noMoreThanOneReleaseTaskFound) {
             val requestedReleaseTasksNames = releaseTasksSelectedForExecution.map { task -> task.name }.joinToString(", ")
 
             "At most one release task can be requested at any given time; tasks actually requested: $requestedReleaseTasksNames"
