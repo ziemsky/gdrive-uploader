@@ -141,7 +141,7 @@ githubRelease {
 
     targetCommitish { (rootProject.version as ProjectVersion).asGitTagName() }
 
-    overwrite { false }
+//    overwrite { false }
 
 //    dryRun { true }
 
