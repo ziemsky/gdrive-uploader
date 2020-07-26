@@ -137,7 +137,7 @@ githubRelease {
 
     releaseName { (rootProject.version as ProjectVersion).value() }
 
-//    tagName { (rootProject.version as ProjectVersion).asGitTagName() }
+    tagName { (rootProject.version as ProjectVersion).asGitTagName() }
 
     targetCommitish { (rootProject.version as ProjectVersion).asGitTagName() }
 
