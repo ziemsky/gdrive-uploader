@@ -17,14 +17,27 @@ class ProjectVersion private constructor(
     // GitVersionTag: version@0.1.0-18-g89df741-dirty
     // ProjectVersion: 0.1.0-18-g89df741-dirty <- toString: https://docs.gradle.org/current/dsl/org.gradle.api.Project.html#org.gradle.api.Project:version
 
+    /**
+     * Value from [value] prefixed with [VERSION_TAG_PREFIX]
+     */
     fun asGitTagName(): String {
         // todo test
         return "$VERSION_TAG_PREFIX${value()}"
     }
 
+    /**
+     * Value denoting project version conforming to pattern: `semVer-commitOffset-commitHash-dirtyFlag`,
+     * where:
+     * * `semVer` - always present, e.g. `0.0.0` or `1.2.3`.
+     * * `commitOffset` - number of commits from the last one tagged with version tag; optional.
+     * * `commitHash` - git commit hash; optional.
+     * * `dirtyFlag` - indicates presence of uncommitted changes; optional.
+     *
+     * Examples:
+     * * `1.2.3`
+     * * `1.2.3-2-980db38-dirty`
+     */
     fun value(): String {
-
-        // todo test and think through - these won't _really_ be used, so hard to tell whether useful
 
         val commitOffsetFragment = if (commitOffset > 0 || semVer == ZERO) "-$commitOffset" else ""
         val commitHashFragment   = if (commitHash.isNotEmpty()) "-$commitHash" else ""

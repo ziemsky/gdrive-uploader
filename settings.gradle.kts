@@ -18,7 +18,7 @@ pluginManagement {
                     "com.dorongold.task-tree" to "1.3.1",
                     "com.github.ben-manes.versions" to "0.28.0",
                     "com.bmuschko.docker-spring-boot-application" to "6.4.0",
-                    "com.palantir.git-version" to "0.12.3"
+                    "com.github.breadmoirai.github-release" to "2.2.12"
             )
 
             val pluginVersionsByNamespaces = mapOf(
