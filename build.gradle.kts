@@ -1,5 +1,7 @@
+import com.github.breadmoirai.githubreleaseplugin.GithubReleaseTask
 import com.ziemsky.gradle.git_semver_release_plugin.GitSemverReleaseFullTask
 import com.ziemsky.gradle.git_semver_release_plugin.GitSemverReleaseTask
+import com.ziemsky.gradle.git_semver_release_plugin.ProjectVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.nio.file.Paths
 
@@ -10,6 +12,7 @@ plugins {
     id("io.spring.dependency-management")
     id("com.dorongold.task-tree")
     id("com.github.ben-manes.versions")
+    id("com.github.breadmoirai.github-release")
 
     id("com.ziemsky.gradle.git-semver-release-plugin")
 }
@@ -127,6 +130,26 @@ subprojects {
     }
 }
 
+githubRelease {
+    owner { "ziemsky" }
+
+    repo { "gdrive-uploader" }
+
+    releaseName { (rootProject.version as ProjectVersion).value() }
+
+//    tagName { (rootProject.version as ProjectVersion).asGitTagName() }
+
+    targetCommitish { (rootProject.version as ProjectVersion).asGitTagName() }
+
+    overwrite { false }
+
+//    dryRun { true }
+
+    releaseAssets.from("application/build/libs")
+
+    applyPropertyIfProvided("github.api.token", authorization::set)
+}
+
 // Order checks with less expensive ones running first to fail fast
 tasks.getByPath(":application:check").mustRunAfter(":test-shared-resources:check")
 tasks.getByPath(":test-integration:check").mustRunAfter(":application:check")
@@ -135,7 +158,10 @@ tasks.getByPath(":check").mustRunAfter(":test-e2e:check")
 
 tasks.withType<GitSemverReleaseTask> { dependsOn.add(tasks.getByPath(":application:dockerPushImage")) }
 
-tasks.withType<GitSemverReleaseFullTask> { dependsOn.addAll(allCheckTasks()) }
+tasks.withType<GitSemverReleaseFullTask> {
+    dependsOn.addAll(allCheckTasks())
+    finalizedBy(tasks.withType<GithubReleaseTask>())
+}
 
 tasks.getByPath(":application:dockerPushImage").mustRunAfter(
         ":test-e2e:testContentTearDown",
@@ -146,3 +172,7 @@ fun allCheckTasks(): List<String> = rootProject
         .allprojects
         .flatMap { project -> project.tasks.filter { it.name == "check" } }
         .map { testTask -> testTask.path }
+
+fun applyPropertyIfProvided(propertyName: String, action: (String) -> Unit) {
+    (rootProject.findProperty(propertyName) as String?)?.let(action)
+}
