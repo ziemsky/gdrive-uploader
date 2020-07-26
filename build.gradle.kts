@@ -5,6 +5,14 @@ import com.ziemsky.gradle.git_semver_release_plugin.ProjectVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.nio.file.Paths
 
+buildscript {
+    dependencies {
+        classpath(files("/home/ziemsky/projects/notmine/github-release-gradle-plugin/build/libs/github-release-2.2.12.jar"))
+    }
+}
+
+//apply(com.github.breadmoirai.githubreleaseplugin.GithubReleasePlugin)
+
 plugins {
     java
     kotlin("jvm") apply false
@@ -16,6 +24,8 @@ plugins {
 
     id("com.ziemsky.gradle.git-semver-release-plugin")
 }
+
+
 
 // todo document uploader.run.environment in readme
 val defaultRunEnvironment = "local"
@@ -139,15 +149,13 @@ githubRelease {
 
     tagName { (rootProject.version as ProjectVersion).asGitTagName() }
 
-    targetCommitish { (rootProject.version as ProjectVersion).asGitTagName() }
+    overwrite { true }
 
-//    overwrite { false }
+    releaseAssets.from(
+            fileTree(rootProject.project(":application").buildDir.absolutePath + "/libs")
+    )
 
-//    dryRun { true }
-
-    releaseAssets.from("application/build/libs")
-
-    applyPropertyIfProvided("github.api.token", authorization::set)
+    applyPropertyIfProvided("github.api.token", this::token)
 }
 
 // Order checks with less expensive ones running first to fail fast
