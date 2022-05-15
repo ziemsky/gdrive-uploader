@@ -16,10 +16,10 @@ class StatsCalculator {
             )
 
     private fun minStartTime(securedFileSummaries: Set<SecuredFileSummary>): Instant =
-            securedFileSummaries.minBy(SecuredFileSummary::uploadStart)?.uploadStart ?: Instant.MIN // todo null value? exception?
+        securedFileSummaries.minOfOrNull { it.uploadStart } ?: Instant.MIN // todo null value? exception?
 
     private fun maxStartTime(securedFileSummaries: Set<SecuredFileSummary>): Instant =
-            securedFileSummaries.maxBy(SecuredFileSummary::uploadEnd)?.uploadEnd ?: Instant.MIN // todo null value? exception?
+        securedFileSummaries.maxOfOrNull { it.uploadEnd } ?: Instant.MIN // todo null value? exception?
 
     private fun totalFilesSizeInBytes(securedFileSummaries: Set<SecuredFileSummary>): Long =
             securedFileSummaries

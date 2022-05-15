@@ -33,15 +33,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-integration")
     implementation("org.springframework.integration:spring-integration-file")
 
-    implementation("io.github.microutils:kotlin-logging") {
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.slf4j")
-    }
+    implementation("io.github.microutils:kotlin-logging")
+
     implementation("ch.qos.logback:logback-classic")
 
     implementation("com.github.ladutsko:spring-boot-starter-hocon")
-
-    implementation("org.hibernate.validator:hibernate-validator")
 
     implementation("com.jakewharton.byteunits:byteunits")
 
@@ -59,12 +55,8 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    testImplementation("io.kotest:kotest-runner-junit5-jvm") {
-        // to prevent io.kotest import older kotlin-stdlib-common
-        exclude(group = "org.jetbrains.kotlin")
-    }
+    testImplementation("io.kotest:kotest-runner-junit5-jvm")
     testImplementation("io.kotest:kotest-property-jvm")
-    testImplementation("io.kotest:kotest-runner-console-jvm")
 
     testImplementation("io.mockk:mockk")
 }

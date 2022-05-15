@@ -15,18 +15,8 @@ dependencies {
 
     testImplementation(files("../lib/fs-structure-0.1.0-SNAPSHOT.jar"))
 
-    testImplementation("io.kotest:kotest-runner-junit5-jvm") {
-        // to prevent io.kotest import older kotlin-stdlib-common
-        exclude(group = "org.jetbrains.kotlin")
-    }
-    testImplementation("io.kotest:kotest-runner-console-jvm") {
-        // to prevent io.kotest import older kotlin-stdlib-common
-        exclude(group = "org.jetbrains.kotlin")
-    }
-    testImplementation("io.kotest:kotest-extensions-spring") {
-        // to prevent io.kotest import older kotlin-stdlib-common
-        exclude(group = "org.jetbrains.kotlin")
-    }
+    testImplementation("io.kotest:kotest-runner-junit5-jvm")
+    testImplementation("io.kotest.extensions:kotest-extensions-spring")
 
     testImplementation("org.springframework:spring-test")
     testImplementation("org.springframework:spring-context")
@@ -38,10 +28,7 @@ dependencies {
     testImplementation("com.google.apis:google-api-services-drive")
     testImplementation("com.google.api-client:google-api-client")
 
-    implementation("io.github.microutils:kotlin-logging") {
-        exclude(group = "org.jetbrains.kotlin")
-        exclude(group = "org.slf4j")
-    }
+    implementation("io.github.microutils:kotlin-logging")
     implementation("ch.qos.logback:logback-classic")
 
     testRuntimeOnly("com.fasterxml.jackson.core:jackson-databind")

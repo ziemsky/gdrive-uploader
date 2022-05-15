@@ -1,4 +1,4 @@
-package com.ziemsky.uploader.test.integration
+package com.ziemsky.uploader.stats.reporting.logging
 
 
 import ch.qos.logback.classic.Level
@@ -6,8 +6,6 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import com.ziemsky.uploader.securing.model.SecuredFilesBatchStats
-import com.ziemsky.uploader.stats.reporting.logging.StatsLogRenderer
-import com.ziemsky.uploader.stats.reporting.logging.StatsLogger
 import com.ziemsky.uploader.stats.reporting.logging.infrastructure.Slf4jStatsLogger
 import com.ziemsky.uploader.stats.reporting.logging.model.Line
 import io.kotest.core.spec.IsolationMode

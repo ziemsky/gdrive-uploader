@@ -2,11 +2,11 @@ package io.kotest.provided
 
 import io.kotest.core.config.AbstractProjectConfig
 import io.kotest.core.extensions.Extension
-import io.kotest.spring.SpringAutowireConstructorExtension
+import io.kotest.extensions.spring.SpringExtension
 
-object ProjectConfig : AbstractProjectConfig() {
+class ProjectConfig : AbstractProjectConfig() {
 
     // Enables integration with Spring DI
-    // https://github.com/kotest/kotest/blob/master/doc/extensions.md#constructor-injection
-    override fun extensions(): List<Extension> = listOf(SpringAutowireConstructorExtension)
+    // https://kotest.io/docs/extensions/spring.html#constructor-injection
+    override fun extensions(): List<Extension> = listOf(SpringExtension)
 }

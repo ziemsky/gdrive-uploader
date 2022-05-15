@@ -39,6 +39,7 @@ class ProjectVersion private constructor(
     fun withNextPatchNumber(): ProjectVersion = ProjectVersion(semVer.withNextPatchNumber(), 0, "", repoDirty)
 
     override fun toString(): String = value()
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -97,20 +98,26 @@ class ProjectVersion private constructor(
 
                 val segments = projectVersionString.split('-')
 
-                // todo relying on just the count and position may be brittle
-
                 return ProjectVersion(
                         semVer = SemVer.from(segments[0]),
-                        commitOffset = if (segments.size > 1) segments[1].toInt() else 0,
-                        commitHash = if (segments.size > 2) segments[2] else "",
+                        commitOffset = commitOffsetFrom(segments),
+                        commitHash = commitHashFrom(segments),
                         repoDirty = isRepoDirty
                 )
             } catch (e: Exception) {
                 throw RuntimeException(
-                        "Failed to parse project version from git tag: '$gitVersionTagName' for repo that is dirty: $isRepoDirty", e
+                        "Failed to parse project version from git tag: '$gitVersionTagName' for repo that is ${if (isRepoDirty) "dirty" else "not dirty"}.", e
                 )
             }
         }
+
+        private fun commitOffsetFrom(segments: List<String>):Int = when (segments.size) {
+            3 -> segments[1].toInt() // version@0.10.0-1-g9494b11
+            4 -> segments[2].toInt() // version@0.10.0-dirty-1-g9494b11
+            else -> 0                // version@0.10.0
+        }
+
+        private fun commitHashFrom(segments: List<String>) = if (segments.size > 2) segments[2] else ""
 
         private fun projectVersionFromGitHash(
                 gitVersionTagName: String,

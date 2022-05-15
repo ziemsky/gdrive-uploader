@@ -73,7 +73,7 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
 
                 Then("delegates the action to the retrying executor") {
                     assertThatRetryingClientDelegatesToDirectClientThroughRetryingExecutor(
-                            clientReturnValue = mockk<Unit>(),
+                            clientReturnValue = mockk(),
                             expectedInteractionWithDirectClient = { gDriveDirectClient.deleteFolder(folderToDelete) },
                             retryingClientActionToVerify = { gDriveRetryingClient.deleteFolder(folderToDelete) },
                             expectedTimeout = expectedTimeout
@@ -119,9 +119,7 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
 
         programDirectClientMock(expectedInteractionWithDirectClient, clientReturnValue)
 
-
         val retryingClientReturnedValue = retryingClientActionToVerify.invoke()
-
 
         verifyDelegationToDirectClient(
                 clientReturnValue,
@@ -194,15 +192,11 @@ class GDriveRetryingClientSpec : BehaviorSpec() {
             expectedInteractionWithDirectClient: () -> CLIENT_RETURN_VALUE_TYPE
     ) {
 
-        confirmVerified(clientReturnValue as Any)
-        if (retryingClientReturnedValue !is Unit) {
-            retryingClientReturnedValue shouldBeSameInstanceAs clientReturnValue
-        }
+        if (clientReturnValue !is Unit) confirmVerified(clientReturnValue as Any)
 
-        verify(
-                exactly = 1,
-                verifyBlock = { expectedInteractionWithDirectClient.invoke() }
-        )
+        if (retryingClientReturnedValue !is Unit) retryingClientReturnedValue shouldBeSameInstanceAs clientReturnValue
+
+        verify(exactly = 1) { expectedInteractionWithDirectClient.invoke() }
     }
 
     private fun <CLIENT_RETURN_VALUE_TYPE> programDirectClientMock(expectedInteractionWithDirectClient: () -> CLIENT_RETURN_VALUE_TYPE, clientReturnValue: CLIENT_RETURN_VALUE_TYPE) {

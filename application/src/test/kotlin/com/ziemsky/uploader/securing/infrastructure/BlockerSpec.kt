@@ -2,12 +2,12 @@ package com.ziemsky.uploader.securing.infrastructure
 
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.property.arbitrary.arb
 import io.kotest.property.exhaustive.exhaustive
 import io.kotest.property.forAll
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit.MILLIS
+import kotlin.random.Random
 
 class BlockerSpec : BehaviorSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
@@ -18,18 +18,20 @@ class BlockerSpec : BehaviorSpec() {
 
         Given("positive duration to block for") {
 
-            val validIntervals = arb { rs ->
-                generateSequence {
-                    Duration.ofMillis( rs.random.nextLong(2, 2000) )
-                }
-            }
+            val random = Random(Instant.now().toEpochMilli())
+
+            val validIntervals = listOf(
+                Duration.ofMillis(random.nextLong(2, 2000)),
+                Duration.ofMillis(random.nextLong(2, 2000)),
+                Duration.ofMillis(random.nextLong(2, 2000))
+            ).exhaustive()
 
             When("asked to block") {
 
                 val action = { duration:Duration -> Blocker.blockFor(duration) }
 
                 Then("blocks for given duration") {
-                    forAll(3, validIntervals) { givenDuration: Duration ->
+                    forAll(validIntervals) { givenDuration: Duration ->
 
                         val momentStart = Instant.now()
 
@@ -48,7 +50,6 @@ class BlockerSpec : BehaviorSpec() {
         }
 
         Given("non-positive duration to block for") {
-
 
             val nonPositiveIntervals = listOf(-2000L, -1000L, -100L, 0L).map { i -> Duration.ofMillis(i) }.exhaustive()
 

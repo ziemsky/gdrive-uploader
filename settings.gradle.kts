@@ -14,10 +14,11 @@ pluginManagement {
 
             val pluginVersionsByIds = mapOf(
                     "org.springframework.boot" to springBootVersion,
-                    "io.spring.dependency-management" to "1.0.9.RELEASE",
-                    "com.dorongold.task-tree" to "1.3.1",
-                    "com.github.ben-manes.versions" to "0.28.0",
-                    "com.bmuschko.docker-spring-boot-application" to "6.4.0",
+                    "io.spring.dependency-management" to "1.0.11.RELEASE",
+                    "com.dorongold.task-tree" to "2.1.0",
+                    "com.github.ben-manes.versions" to "0.42.0",
+                    "com.bmuschko.docker-spring-boot-application" to "7.3.0",
+                    "com.github.breadmoirai.github-release" to "2.3.7",
                     "com.palantir.git-version" to "0.12.3"
             )
 

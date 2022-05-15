@@ -29,15 +29,28 @@ if (!project.hasProperty("conf.path")) {
     project.extra.set("conf.path", envSpecificConfDirPath)
 }
 
-allprojects {
-    configurations.all { resolutionStrategy.failOnVersionConflict() }
-}
+// In case of a conflict of dependency versions (multiple versions of the same dependency detected),
+// Gradle by default uses the newest of conflicting versions. The following config can influence
+// this behaviour.
+// Note that io.spring.dependency-management plugin doesn't seem to support excluding transitive dependencies,
+// so if resolutionStrategy.failOnVersionConflict() flags conflicts, the offending (older) dependency need excluding.
+// Offending transitive dependencies have to be then excluded at the dependency level in individual
+// sub-projects rather than here.
+//
+// Best to rely on Gradle's default resolution and keep this commented out, otherwise exclusions
+// have to be managed manually for no clear gain, and there is normally A LOT of them required.
+//
+//allprojects {
+//    configurations.all { resolutionStrategy.failOnVersionConflict() }
+//}
 
 // defined in gradle.properties; done this way to support referencing from buildscript
 val awaitilityVersion: String by rootProject
 val kotlinVersion: String by rootProject
+val kotlinCoroutinesVersion: String by rootProject
 val springBootVersion: String by rootProject
 val springVersion: String by rootProject
+val springIntegrationVersion: String by rootProject
 
 val gDriveVersion = "1.27.0"
 
@@ -51,12 +64,6 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
 
     dependencyManagement {
-        // Note: io.spring.dependency-management plugin doesn't seem to support excluding transitive dependencies
-        // and a number of main dependencies include conflicting versions of transitive ones (as flagged by
-        // resolutionStrategy.failOnVersionConflict()). Declaring first-level transitive dependency to apply exclusion
-        // to it doesn't help either (e.g. io.github.microutils:kotlin-logging:1.6.22).
-        // For this reason, offending transitive dependencies had to be excluded at the dependency level in individual
-        // sub-projects rather than here.
 
         dependencies {
             dependencySet("org.jetbrains.kotlin:$kotlinVersion") { // todo tie to the one in settings file
@@ -65,53 +72,54 @@ subprojects {
                 entry("kotlin-reflect")
             }
 
-            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7")
+            dependencySet("org.jetbrains.kotlinx:$kotlinCoroutinesVersion") {
+                entry("kotlinx-coroutines-core")
+                entry("kotlinx-coroutines-core-jvm")
+                entry("kotlinx-coroutines-test")
+            }
 
             dependencySet("org.springframework:$springVersion") {
                 entry("spring-web")
                 entry("spring-context")
-                entry("spring-integration")
             }
+
+            dependency("org.springframework:spring-integration:$springIntegrationVersion")
 
             dependencySet("org.springframework.boot:$springBootVersion") {
                 entry("spring-boot-starter-integration")
                 entry("spring-boot-test")
             }
 
-            dependency("org.springframework.integration:spring-integration-file:$springVersion")
-
+            dependency("org.springframework.integration:spring-integration-file:$springIntegrationVersion")
 
             dependency("org.slf4j:slf4j-api:1.7.30")
-            dependency("io.github.microutils:kotlin-logging:1.8.0.1")
+            dependency("io.github.microutils:kotlin-logging:2.1.21")
             dependency("ch.qos.logback:logback-classic:1.2.3")
 
             dependency("com.github.ladutsko:spring-boot-starter-hocon:2.0.0")
-            dependency("com.typesafe:config:1.4.0")
+            dependency("com.typesafe:config:1.4.2")
 
             // Google Drive client
             dependency("com.google.oauth-client:google-oauth-client-jetty:$gDriveVersion")
             dependency("com.google.apis:google-api-services-drive:v3-rev20181101-$gDriveVersion")
             dependency("com.google.api-client:google-api-client:$gDriveVersion")
 
-            dependencySet("io.kotest:4.1.0") {
+            dependencySet("io.kotest:5.3.0") {
                 entry("kotest-runner-junit5-jvm")
                 entry("kotest-property-jvm")
-                entry("kotest-extensions-spring")
-                entry("kotest-runner-console-jvm")
             }
 
-            dependency("io.mockk:mockk:1.9")
+            dependency("io.kotest.extensions:kotest-extensions-spring:1.1.1")
+
+            dependency("io.mockk:mockk:1.12.3")
 
             dependency("com.fasterxml.jackson.core:jackson-databind:2.9.8")
 
             dependency("org.awaitility:awaitility-kotlin:$awaitilityVersion")
 
-            // Spring Boot starters already add Hibernate Validator but in a slightly older version
-            dependency("org.hibernate.validator:hibernate-validator:6.0.14.Final")
-
             dependency("com.jakewharton.byteunits:byteunits:0.9.1")
 
-            dependency("org.apache.commons:commons-lang3:3.9")
+            dependency("org.apache.commons:commons-lang3:3.12.0")
         }
     }
 

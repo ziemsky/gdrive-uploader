@@ -44,18 +44,6 @@ class UploaderSpec(
 
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    override fun beforeSpec(spec: Spec) {
-        // todo custom Spring Boot Hocon Property Source Starter so that placeholdres can be used in application.conf?
-        //  One to:
-        //  a) support env vars resolution (ladutsko's doesn't call Config.resolve)
-        //  b) support Config.resolveWith(custom config)?
-        System.setProperty("uploader.google.drive.tokensDirectory", Paths.get(confPath, "google/gdrive/secrets/tokens").toAbsolutePath().toString())
-        System.setProperty("uploader.google.drive.credentialsFile", Paths.get(confPath, "google/gdrive/secrets/credentials.json").toAbsolutePath().toString())
-        System.setProperty("uploader.monitoring.path", monitoringPath)
-        System.setProperty("uploader.upload.rootFolderName", rootFolderName)
-    }
-
-
     private fun startApplication() {
         val args = arrayOf(
                 "--spring.config.additional-location=$confPath/application.conf",
@@ -66,6 +54,18 @@ class UploaderSpec(
     }
 
     init {
+
+        beforeSpec {
+            // todo custom Spring Boot Hocon Property Source Starter so that placeholdres can be used in application.conf?
+            //  One to:
+            //  a) support env vars resolution (ladutsko's doesn't call Config.resolve)
+            //  b) support Config.resolveWith(custom config)?
+            System.setProperty("uploader.google.drive.tokensDirectory", Paths.get(confPath, "google/gdrive/secrets/tokens").toAbsolutePath().toString())
+            System.setProperty("uploader.google.drive.credentialsFile", Paths.get(confPath, "google/gdrive/secrets/credentials.json").toAbsolutePath().toString())
+            System.setProperty("uploader.monitoring.path", monitoringPath)
+            System.setProperty("uploader.upload.rootFolderName", rootFolderName)
+        }
+
         Given("some remote content and some files in the source dir") {
 
             // todo elaborate description

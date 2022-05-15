@@ -21,14 +21,17 @@ class IntegrationTestConfig {
     @Bean
     fun testProperties(
             @Value("\${conf.path}/test-integration.conf") configFilePath: Path,
-            @Value("\${conf.path}") confPath: String
+            @Value("\${conf.path}") configPath: String
     ): TestProperties {
+
+        log.info { "configPath: $configPath" }
+        log.info { "configFilePath: $configFilePath" }
 
         val config = ConfigFactory
                 .parseFile(configFilePath.toFile())
                 .resolveWith(
                         ConfigFactory.parseMap(
-                                hashMapOf("CONF_PATH" to confPath),
+                                hashMapOf("CONF_PATH" to configPath),
                                 "env vars"
                         )
                 )

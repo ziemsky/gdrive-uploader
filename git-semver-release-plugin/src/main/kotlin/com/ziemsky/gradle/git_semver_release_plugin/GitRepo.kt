@@ -47,7 +47,7 @@ class GitRepo private constructor(val gitRepoDir: Path) {
         val versionTagGlobPattern = "$versionTagPrefix*"
 
         repo
-                .describe()                       // https://git-scm.com/docs/git-describe/2.6.7
+                .describe()                       // https://git-scm.com/docs/git-describe
                 .setAlways(true)                  // should there be no tags to derive the version for, display HEAD's hash
                 .setTags(true)                    // enables looking for lightweight tags as well as annotated ones (the latter is default)
                 .setMatch(versionTagGlobPattern)  // only tags matching pattern; git uses glob: https://linux.die.net/man/7/glob

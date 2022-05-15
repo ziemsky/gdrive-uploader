@@ -19,18 +19,16 @@ class JanitorSpec(testFixtures: TestFixtures,
                   testDirectory: Path
 ) : BehaviorSpec() {
 
-
-
     private lateinit var janitor: Janitor
 
-    override fun beforeSpec(spec: Spec) {
-        janitor = Janitor(
-                remoteStorageService = mockk(), // unused in these tests
-                maxDailyFoldersCount = 5
-        )
-    }
-
     init {
+
+        beforeSpec {
+            janitor = Janitor(
+                    remoteStorageService = mockk(), // unused in these tests
+                    maxDailyFoldersCount = 5
+            )
+        }
 
         given("Existing local files, some to keep, one to cleanup") {
 
